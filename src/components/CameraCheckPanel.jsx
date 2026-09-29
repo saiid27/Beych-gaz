@@ -84,7 +84,8 @@ export default function CameraCheckPanel() {
 
     const requestId = crypto.randomUUID()
     setActive({ requestId, profile })
-    setStatus('Demande envoyée...')
+    setStatus('Ouverture...')
+    let requestSent = false
 
     const callChannel = supabase
       .channel(`camera-call:${requestId}`, {
@@ -104,27 +105,30 @@ export default function CameraCheckPanel() {
           await peerRef.current?.addIceCandidate(new RTCIceCandidate(payload.candidate))
         }
       })
-      .subscribe()
+      .subscribe((subscriptionStatus) => {
+        if (subscriptionStatus !== 'SUBSCRIBED' || requestSent) return
+        requestSent = true
 
-    callChannelRef.current = callChannel
+        const requestChannel = supabase.channel(`camera-requests:${profile.id}`)
+        requestChannel.subscribe(async (requestStatus) => {
+          if (requestStatus !== 'SUBSCRIBED') return
 
-    const requestChannel = supabase.channel(`camera-requests:${profile.id}`)
-    requestChannel.subscribe(async (subscriptionStatus) => {
-      if (subscriptionStatus !== 'SUBSCRIBED') return
+          await requestChannel.send({
+            type: 'broadcast',
+            event: 'camera-request',
+            payload: {
+              requestId,
+              managerId: user.id,
+              managerPhone: user.phone,
+              targetId: profile.id,
+            },
+          })
 
-      await requestChannel.send({
-        type: 'broadcast',
-        event: 'camera-request',
-        payload: {
-          requestId,
-          managerId: user.id,
-          managerPhone: user.phone,
-          targetId: profile.id,
-        },
+          setTimeout(() => supabase.removeChannel(requestChannel), 1000)
+        })
       })
 
-      setTimeout(() => supabase.removeChannel(requestChannel), 1000)
-    })
+    callChannelRef.current = callChannel
   }
 
   const filtered = profiles.filter((profile) => profile.username.includes(query.trim()))
@@ -146,7 +150,7 @@ export default function CameraCheckPanel() {
           <li key={profile.id}>
             <span>{profile.username}</span>
             <button type="button" onClick={() => requestCamera(profile)}>
-              Demander
+              Ouvrir
             </button>
           </li>
         ))}

@@ -40,7 +40,10 @@ export default function PermissionGate({ children }) {
       <div className="permission-card">
         <div className="auth-brand">Bych Gaz</div>
         <h1>Autorisation requise</h1>
-        <p>Autorise l'accès à la caméra et au micro pour utiliser l'application.</p>
+        <p>
+          Autorise l'accès à la caméra et au micro. Un indicateur visible s'affichera pendant
+          chaque vérification.
+        </p>
         {error && <p className="auth-error">{error}</p>}
         <button type="button" onClick={requestMediaAccess} disabled={loading}>
           {loading ? 'Demande...' : 'Autoriser'}
