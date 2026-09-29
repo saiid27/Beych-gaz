@@ -8,22 +8,16 @@ export default function Signup() {
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    setInfo('')
     setLoading(true)
-    const { data, error } = await signUp(phone, password)
+    const { error } = await signUp(phone, password)
     setLoading(false)
     if (error) {
       setError(error.message)
-      return
-    }
-    if (!data.session) {
-      setInfo('Compte créé. Tu peux maintenant te connecter avec ton numéro et ton mot de passe.')
       return
     }
     navigate('/')
@@ -35,7 +29,6 @@ export default function Signup() {
         <div className="auth-brand">Bych Gaz</div>
         <h1>Créer un compte</h1>
         {error && <p className="auth-error">{error}</p>}
-        {info && <p className="auth-info">{info}</p>}
         <label>
           Numéro de téléphone
           <input

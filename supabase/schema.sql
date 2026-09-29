@@ -1,46 +1,43 @@
--- Run this once in the Supabase SQL editor (Project → SQL Editor → New query)
+-- Run this in the Supabase SQL editor after setting DATABASE_URL in Vercel.
+-- This schema uses a simple app-owned auth table, not Supabase Auth.
 
--- 1. Profiles (mirrors auth.users, one row per user)
+create extension if not exists pgcrypto;
+
+-- 1. App users: phone + hashed password, used only by the backend API.
+create table if not exists app_users (
+  id uuid primary key default gen_random_uuid(),
+  phone text unique not null,
+  password_salt text not null,
+  password_hash text not null,
+  created_at timestamptz not null default now()
+);
+
+-- 2. Public chat profile for each app user.
 create table if not exists profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
+  id uuid primary key,
   username text unique not null,
   avatar_url text,
   created_at timestamptz not null default now()
 );
 
-alter table profiles enable row level security;
+alter table profiles drop constraint if exists profiles_id_fkey;
 
-drop policy if exists "Profiles are readable by any authenticated user" on profiles;
-create policy "Profiles are readable by any authenticated user"
-  on profiles for select
-  to authenticated
-  using (true);
-
-drop policy if exists "Users can update their own profile" on profiles;
-create policy "Users can update their own profile"
-  on profiles for update
-  to authenticated
-  using (id = auth.uid());
-
--- Auto-create a profile row when someone signs up
-create or replace function public.handle_new_user()
-returns trigger as $$
+do $$
 begin
-  insert into public.profiles (id, username)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'username', new.phone, new.email, 'user_' || substr(new.id::text, 1, 8))
-  );
-  return new;
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_app_users_id_fkey'
+      and conrelid = 'profiles'::regclass
+  ) then
+    alter table profiles
+      add constraint profiles_app_users_id_fkey
+      foreign key (id) references app_users(id) on delete cascade;
+  end if;
 end;
-$$ language plpgsql security definer set search_path = public;
+$$;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-
--- 2. Conversations (both 1-to-1 and groups)
+-- 3. Conversations, participants, and messages.
 create table if not exists conversations (
   id uuid primary key default gen_random_uuid(),
   is_group boolean not null default false,
@@ -49,9 +46,6 @@ create table if not exists conversations (
   created_at timestamptz not null default now()
 );
 
-alter table conversations enable row level security;
-
--- 3. Participants
 create table if not exists conversation_participants (
   conversation_id uuid not null references conversations(id) on delete cascade,
   user_id uuid not null references profiles(id) on delete cascade,
@@ -59,40 +53,6 @@ create table if not exists conversation_participants (
   primary key (conversation_id, user_id)
 );
 
-alter table conversation_participants enable row level security;
-
-drop policy if exists "Participants can see their own membership rows" on conversation_participants;
-create policy "Participants can see their own membership rows"
-  on conversation_participants for select
-  to authenticated
-  using (
-    user_id = auth.uid()
-    or conversation_id in (
-      select conversation_id from conversation_participants where user_id = auth.uid()
-    )
-  );
-
-drop policy if exists "Users can join conversations they are added to" on conversation_participants;
-create policy "Users can join conversations they are added to"
-  on conversation_participants for insert
-  to authenticated
-  with check (true);
-
-drop policy if exists "Members can view their conversations" on conversations;
-create policy "Members can view their conversations"
-  on conversations for select
-  to authenticated
-  using (
-    id in (select conversation_id from conversation_participants where user_id = auth.uid())
-  );
-
-drop policy if exists "Authenticated users can create conversations" on conversations;
-create policy "Authenticated users can create conversations"
-  on conversations for insert
-  to authenticated
-  with check (created_by = auth.uid());
-
--- 4. Messages
 create table if not exists messages (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references conversations(id) on delete cascade,
@@ -103,26 +63,20 @@ create table if not exists messages (
   constraint content_or_image check (content is not null or image_url is not null)
 );
 
-alter table messages enable row level security;
+-- The frontend no longer uses Supabase Auth, so RLS policies based on auth.uid()
+-- would block the simple chat client. Keep app_users private and expose chat tables.
+alter table profiles disable row level security;
+alter table conversations disable row level security;
+alter table conversation_participants disable row level security;
+alter table messages disable row level security;
 
-drop policy if exists "Members can read messages in their conversations" on messages;
-create policy "Members can read messages in their conversations"
-  on messages for select
-  to authenticated
-  using (
-    conversation_id in (select conversation_id from conversation_participants where user_id = auth.uid())
-  );
+grant usage on schema public to anon, authenticated;
+grant select on profiles to anon, authenticated;
+grant select, insert on conversations to anon, authenticated;
+grant select, insert on conversation_participants to anon, authenticated;
+grant select, insert on messages to anon, authenticated;
 
-drop policy if exists "Members can send messages in their conversations" on messages;
-create policy "Members can send messages in their conversations"
-  on messages for insert
-  to authenticated
-  with check (
-    sender_id = auth.uid()
-    and conversation_id in (select conversation_id from conversation_participants where user_id = auth.uid())
-  );
-
--- 5. Realtime: enable replication on messages
+-- 4. Realtime: enable replication on messages.
 do $$
 begin
   alter publication supabase_realtime add table messages;
@@ -131,7 +85,7 @@ exception
 end;
 $$;
 
--- 6. Storage bucket for image sharing (public read, authenticated write)
+-- 5. Storage bucket for image sharing.
 insert into storage.buckets (id, name, public)
 values ('chat-images', 'chat-images', true)
 on conflict (id) do nothing;
@@ -141,8 +95,8 @@ create policy "Anyone can view chat images"
   on storage.objects for select
   using (bucket_id = 'chat-images');
 
-drop policy if exists "Authenticated users can upload chat images" on storage.objects;
-create policy "Authenticated users can upload chat images"
+drop policy if exists "Anyone can upload chat images" on storage.objects;
+create policy "Anyone can upload chat images"
   on storage.objects for insert
-  to authenticated
+  to anon, authenticated
   with check (bucket_id = 'chat-images');
