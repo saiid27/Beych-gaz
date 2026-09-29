@@ -29,7 +29,7 @@ export default function Chat() {
   const active = conversations.find((c) => c.id === activeId)
 
   return (
-    <div className="chat-app">
+    <div className={'chat-app ' + (active ? 'has-active-chat' : 'show-conversations')}>
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -37,7 +37,7 @@ export default function Chat() {
         onCreated={(id) => reload(id)}
       />
       {active ? (
-        <ChatWindow conversation={active} />
+        <ChatWindow conversation={active} onBack={() => setActiveId(null)} />
       ) : (
         <section className="chat-window empty-state">
           <p>Sélectionne une discussion ou démarres-en une nouvelle.</p>

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { fetchMessages, sendMessage, uploadChatImage } from '../lib/chat'
 import { conversationLabel } from './Sidebar'
 
-export default function ChatWindow({ conversation }) {
+export default function ChatWindow({ conversation, onBack }) {
   const { user, profile } = useAuth()
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
@@ -74,7 +74,12 @@ export default function ChatWindow({ conversation }) {
 
   return (
     <section className="chat-window">
-      <header className="chat-header">{conversationLabel(conversation, profile?.id)}</header>
+      <header className="chat-header">
+        <button type="button" className="back-btn" onClick={onBack} aria-label="Retour">
+          ‹
+        </button>
+        <span>{conversationLabel(conversation, profile?.id)}</span>
+      </header>
 
       <div className="messages">
         {messages.map((m) => (
