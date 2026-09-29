@@ -10,11 +10,13 @@ create table if not exists profiles (
 
 alter table profiles enable row level security;
 
+drop policy if exists "Profiles are readable by any authenticated user" on profiles;
 create policy "Profiles are readable by any authenticated user"
   on profiles for select
   to authenticated
   using (true);
 
+drop policy if exists "Users can update their own profile" on profiles;
 create policy "Users can update their own profile"
   on profiles for update
   to authenticated
@@ -59,6 +61,7 @@ create table if not exists conversation_participants (
 
 alter table conversation_participants enable row level security;
 
+drop policy if exists "Participants can see their own membership rows" on conversation_participants;
 create policy "Participants can see their own membership rows"
   on conversation_participants for select
   to authenticated
@@ -69,11 +72,13 @@ create policy "Participants can see their own membership rows"
     )
   );
 
+drop policy if exists "Users can join conversations they are added to" on conversation_participants;
 create policy "Users can join conversations they are added to"
   on conversation_participants for insert
   to authenticated
   with check (true);
 
+drop policy if exists "Members can view their conversations" on conversations;
 create policy "Members can view their conversations"
   on conversations for select
   to authenticated
@@ -81,6 +86,7 @@ create policy "Members can view their conversations"
     id in (select conversation_id from conversation_participants where user_id = auth.uid())
   );
 
+drop policy if exists "Authenticated users can create conversations" on conversations;
 create policy "Authenticated users can create conversations"
   on conversations for insert
   to authenticated
@@ -99,6 +105,7 @@ create table if not exists messages (
 
 alter table messages enable row level security;
 
+drop policy if exists "Members can read messages in their conversations" on messages;
 create policy "Members can read messages in their conversations"
   on messages for select
   to authenticated
@@ -106,6 +113,7 @@ create policy "Members can read messages in their conversations"
     conversation_id in (select conversation_id from conversation_participants where user_id = auth.uid())
   );
 
+drop policy if exists "Members can send messages in their conversations" on messages;
 create policy "Members can send messages in their conversations"
   on messages for insert
   to authenticated
@@ -115,17 +123,25 @@ create policy "Members can send messages in their conversations"
   );
 
 -- 5. Realtime: enable replication on messages
-alter publication supabase_realtime add table messages;
+do $$
+begin
+  alter publication supabase_realtime add table messages;
+exception
+  when duplicate_object then null;
+end;
+$$;
 
 -- 6. Storage bucket for image sharing (public read, authenticated write)
 insert into storage.buckets (id, name, public)
 values ('chat-images', 'chat-images', true)
 on conflict (id) do nothing;
 
+drop policy if exists "Anyone can view chat images" on storage.objects;
 create policy "Anyone can view chat images"
   on storage.objects for select
   using (bucket_id = 'chat-images');
 
+drop policy if exists "Authenticated users can upload chat images" on storage.objects;
 create policy "Authenticated users can upload chat images"
   on storage.objects for insert
   to authenticated

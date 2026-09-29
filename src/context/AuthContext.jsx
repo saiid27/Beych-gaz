@@ -3,6 +3,11 @@ import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(null)
 
+function phoneToAuthEmail(phone) {
+  const normalized = phone.replace(/\D/g, '')
+  return `${normalized}@beychgaz.com`
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -41,12 +46,12 @@ export function AuthProvider({ children }) {
     loading,
     signUp: (phone, password, username) =>
       supabase.auth.signUp({
-        phone,
+        email: phoneToAuthEmail(phone),
         password,
-        options: { data: { username } },
+        options: { data: { username, phone } },
       }),
     signIn: (phone, password) =>
-      supabase.auth.signInWithPassword({ phone, password }),
+      supabase.auth.signInWithPassword({ email: phoneToAuthEmail(phone), password }),
     signOut: () => supabase.auth.signOut(),
   }
 

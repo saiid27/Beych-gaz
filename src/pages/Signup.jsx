@@ -24,7 +24,7 @@ export default function Signup() {
       return
     }
     if (!data.session) {
-      setInfo('Compte créé. Vérifie ton téléphone pour confirmer le code reçu, puis connecte-toi.')
+      setInfo('Compte créé. Tu peux maintenant te connecter avec ton numéro et ton mot de passe.')
       return
     }
     navigate('/')
