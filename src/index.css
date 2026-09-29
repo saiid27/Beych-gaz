@@ -1,0 +1,29 @@
+:root {
+  --wa-green: #00a884;
+  --wa-green-dark: #008069;
+  --wa-teal-dark: #111b21;
+  --wa-panel: #ffffff;
+  --wa-bg: #f0f2f5;
+  --wa-bubble-mine: #d9fdd3;
+  --wa-bubble-theirs: #ffffff;
+  --wa-border: #e9edef;
+  --wa-text: #111b21;
+  --wa-text-muted: #667781;
+
+  color-scheme: light;
+  font: 15px/1.4 system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--wa-bg);
+  color: var(--wa-text);
+}
+
+#root {
+  min-height: 100svh;
+}
