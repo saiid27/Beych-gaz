@@ -11,19 +11,36 @@ export default function ChatWindow({ conversation, onBack }) {
   const [uploading, setUploading] = useState(false)
   const bottomRef = useRef(null)
   const fileInputRef = useRef(null)
+  const channelRef = useRef(null)
+
+  async function loadMessages() {
+    const data = await fetchMessages(conversation.id)
+    setMessages(data)
+  }
+
+  async function notifyMessageChange() {
+    await channelRef.current?.send({
+      type: 'broadcast',
+      event: 'message-changed',
+      payload: { conversationId: conversation.id, at: Date.now() },
+    })
+  }
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadMessages() {
+    async function loadConversationMessages() {
       const data = await fetchMessages(conversation.id)
       if (!cancelled) setMessages(data)
     }
 
-    loadMessages()
+    loadConversationMessages()
 
     const channel = supabase
-      .channel(`messages:${conversation.id}`)
+      .channel(`messages:${conversation.id}`, {
+        config: { broadcast: { self: false } },
+      })
+      .on('broadcast', { event: 'message-changed' }, () => loadConversationMessages())
       .on(
         'postgres_changes',
         {
@@ -32,12 +49,15 @@ export default function ChatWindow({ conversation, onBack }) {
           table: 'messages',
           filter: `conversation_id=eq.${conversation.id}`,
         },
-        () => loadMessages()
+        () => loadConversationMessages()
       )
       .subscribe()
 
+    channelRef.current = channel
+
     return () => {
       cancelled = true
+      channelRef.current = null
       supabase.removeChannel(channel)
     }
   }, [conversation.id])
@@ -52,6 +72,8 @@ export default function ChatWindow({ conversation, onBack }) {
     if (!content) return
     setText('')
     await sendMessage({ conversationId: conversation.id, senderId: user.id, content })
+    await loadMessages()
+    await notifyMessageChange()
   }
 
   async function handleFileChange(e) {
@@ -61,6 +83,8 @@ export default function ChatWindow({ conversation, onBack }) {
     try {
       const url = await uploadChatImage(file, user.id)
       await sendMessage({ conversationId: conversation.id, senderId: user.id, imageUrl: url })
+      await loadMessages()
+      await notifyMessageChange()
     } finally {
       setUploading(false)
       e.target.value = ''
