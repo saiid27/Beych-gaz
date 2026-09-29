@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext'
 export default function Signup() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,7 +16,7 @@ export default function Signup() {
     setError('')
     setInfo('')
     setLoading(true)
-    const { data, error } = await signUp(phone, password, username)
+    const { data, error } = await signUp(phone, password)
     setLoading(false)
     if (error) {
       setError(error.message)
@@ -37,16 +36,6 @@ export default function Signup() {
         <h1>Créer un compte</h1>
         {error && <p className="auth-error">{error}</p>}
         {info && <p className="auth-info">{info}</p>}
-        <label>
-          Nom d'utilisateur
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            minLength={3}
-          />
-        </label>
         <label>
           Numéro de téléphone
           <input

@@ -47,11 +47,11 @@ export function AuthProvider({ children }) {
     user: session?.user ?? null,
     profile,
     loading,
-    signUp: (phone, password, username) =>
+    signUp: (phone, password) =>
       supabase.auth.signUp({
         email: phoneToAuthEmail(phone),
         password,
-        options: { data: { username, phone: normalizePhone(phone) } },
+        options: { data: { username: normalizePhone(phone), phone: normalizePhone(phone) } },
       }),
     signIn: (phone, password) =>
       supabase.auth.signInWithPassword({ email: phoneToAuthEmail(phone), password }),
