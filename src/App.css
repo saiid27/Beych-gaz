@@ -28,10 +28,20 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-.auth-card h1 {
-  margin: 0 0 8px;
+.auth-brand {
+  text-align: center;
+  font-weight: 700;
   font-size: 22px;
   color: var(--wa-green-dark);
+  letter-spacing: 0.2px;
+}
+
+.auth-card h1 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--wa-text-muted);
+  text-align: center;
 }
 
 .auth-card label {
@@ -123,6 +133,15 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.sidebar-brand {
+  padding: 14px 16px 10px;
+  background: var(--wa-green-dark);
+  color: white;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.2px;
 }
 
 .sidebar-header {

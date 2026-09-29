@@ -33,6 +33,7 @@ export default function Signup() {
   return (
     <div className="auth-screen">
       <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-brand">Bych Gaz</div>
         <h1>Créer un compte</h1>
         {error && <p className="auth-error">{error}</p>}
         {info && <p className="auth-info">{info}</p>}

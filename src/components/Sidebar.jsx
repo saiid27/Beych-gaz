@@ -16,6 +16,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onCreated }
 
   return (
     <aside className="sidebar">
+      <div className="sidebar-brand">Bych Gaz</div>
       <div className="sidebar-header">
         <span className="me">{profile?.username}</span>
         <div className="sidebar-actions">
