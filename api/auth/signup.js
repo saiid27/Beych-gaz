@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       `
         insert into app_users (phone, password_salt, password_hash)
         values ($1, $2, $3)
-        returning id, phone, created_at
+        returning id, phone, is_admin, created_at
       `,
       [phone, salt, hash]
     )
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     await client.query('commit')
 
     return sendJson(res, 201, {
-      user: { id: user.id, phone: user.phone },
+      user: { id: user.id, phone: user.phone, isAdmin: user.is_admin },
       profile: profileResult.rows[0],
     })
   } catch (error) {

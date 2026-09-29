@@ -25,6 +25,7 @@ export default async function handler(req, res) {
         select
           app_users.id,
           app_users.phone,
+          app_users.is_admin,
           app_users.password_salt,
           app_users.password_hash,
           profiles.username,
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
     }
 
     return sendJson(res, 200, {
-      user: { id: row.id, phone: row.phone },
+      user: { id: row.id, phone: row.phone, isAdmin: row.is_admin },
       profile: {
         id: row.id,
         username: row.username,

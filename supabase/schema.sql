@@ -9,8 +9,12 @@ create table if not exists app_users (
   phone text unique not null,
   password_salt text not null,
   password_hash text not null,
+  is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+alter table app_users
+  add column if not exists is_admin boolean not null default false;
 
 -- 2. Public chat profile for each app user.
 create table if not exists profiles (
