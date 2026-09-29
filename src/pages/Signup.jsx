@@ -6,7 +6,7 @@ export default function Signup() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
@@ -17,14 +17,14 @@ export default function Signup() {
     setError('')
     setInfo('')
     setLoading(true)
-    const { data, error } = await signUp(email, password, username)
+    const { data, error } = await signUp(phone, password, username)
     setLoading(false)
     if (error) {
       setError(error.message)
       return
     }
     if (!data.session) {
-      setInfo('Compte créé. Vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.')
+      setInfo('Compte créé. Vérifie ton téléphone pour confirmer le code reçu, puis connecte-toi.')
       return
     }
     navigate('/')
@@ -48,11 +48,12 @@ export default function Signup() {
           />
         </label>
         <label>
-          Email
+          Numéro de téléphone
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="tel"
+            placeholder="+222 12345678"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             required
           />
         </label>

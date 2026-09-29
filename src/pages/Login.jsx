@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -14,7 +14,7 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error } = await signIn(email, password)
+    const { error } = await signIn(phone, password)
     setLoading(false)
     if (error) {
       setError(error.message)
@@ -30,11 +30,12 @@ export default function Login() {
         <h1>Se connecter</h1>
         {error && <p className="auth-error">{error}</p>}
         <label>
-          Email
+          Numéro de téléphone
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="tel"
+            placeholder="+222 12345678"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             required
           />
         </label>
