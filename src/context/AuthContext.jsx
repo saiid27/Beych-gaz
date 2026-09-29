@@ -3,11 +3,6 @@ import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(null)
 
-function phoneToAuthEmail(phone) {
-  const normalized = phone.replace(/\D/g, '')
-  return `${normalized}@beychgaz.com`
-}
-
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -39,19 +34,38 @@ export function AuthProvider({ children }) {
       .then(({ data }) => setProfile(data))
   }, [session])
 
+  async function startChatSession(phone, username) {
+    const cleanPhone = phone.trim()
+    const displayName = (username || cleanPhone).trim()
+
+    const { data, error } = await supabase.auth.signInAnonymously({
+      options: { data: { username: displayName, phone: cleanPhone } },
+    })
+
+    if (error) return { data, error }
+
+    if (data.user) {
+      const { data: updatedProfile, error: profileError } = await supabase
+        .from('profiles')
+        .update({ username: displayName })
+        .eq('id', data.user.id)
+        .select()
+        .single()
+
+      if (profileError) return { data, error: profileError }
+      setProfile(updatedProfile)
+    }
+
+    return { data, error: null }
+  }
+
   const value = {
     session,
     user: session?.user ?? null,
     profile,
     loading,
-    signUp: (phone, password, username) =>
-      supabase.auth.signUp({
-        email: phoneToAuthEmail(phone),
-        password,
-        options: { data: { username, phone } },
-      }),
-    signIn: (phone, password) =>
-      supabase.auth.signInWithPassword({ email: phoneToAuthEmail(phone), password }),
+    signUp: (phone, username) => startChatSession(phone, username),
+    signIn: (phone) => startChatSession(phone, phone),
     signOut: () => supabase.auth.signOut(),
   }
 

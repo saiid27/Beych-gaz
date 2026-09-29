@@ -7,24 +7,17 @@ export default function Signup() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    setInfo('')
     setLoading(true)
-    const { data, error } = await signUp(phone, password, username)
+    const { error } = await signUp(phone, username)
     setLoading(false)
     if (error) {
       setError(error.message)
-      return
-    }
-    if (!data.session) {
-      setInfo('Compte créé. Tu peux maintenant te connecter avec ton numéro et ton mot de passe.')
       return
     }
     navigate('/')
@@ -36,7 +29,6 @@ export default function Signup() {
         <div className="auth-brand">Bych Gaz</div>
         <h1>Créer un compte</h1>
         {error && <p className="auth-error">{error}</p>}
-        {info && <p className="auth-info">{info}</p>}
         <label>
           Nom d'utilisateur
           <input
@@ -57,18 +49,8 @@ export default function Signup() {
             required
           />
         </label>
-        <label>
-          Mot de passe
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </label>
         <button type="submit" disabled={loading}>
-          {loading ? 'Création…' : "S'inscrire"}
+          {loading ? 'Ouverture…' : 'Entrer'}
         </button>
         <p className="auth-switch">
           Déjà un compte ? <Link to="/login">Se connecter</Link>

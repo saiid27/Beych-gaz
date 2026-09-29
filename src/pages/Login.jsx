@@ -6,7 +6,6 @@ export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -14,7 +13,7 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error } = await signIn(phone, password)
+    const { error } = await signIn(phone)
     setLoading(false)
     if (error) {
       setError(error.message)
@@ -39,17 +38,8 @@ export default function Login() {
             required
           />
         </label>
-        <label>
-          Mot de passe
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
         <button type="submit" disabled={loading}>
-          {loading ? 'Connexion…' : 'Se connecter'}
+          {loading ? 'Ouverture…' : 'Entrer'}
         </button>
         <p className="auth-switch">
           Pas de compte ? <Link to="/signup">S'inscrire</Link>
