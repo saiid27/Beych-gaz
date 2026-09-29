@@ -17,6 +17,12 @@ export default function Chat() {
 
   useEffect(() => {
     reload()
+
+    const intervalId = window.setInterval(() => {
+      reload()
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id])
 

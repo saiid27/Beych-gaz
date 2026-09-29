@@ -84,10 +84,43 @@ export async function sendMessage({ conversationId, senderId, content, imageUrl 
   if (error) throw error
 }
 
+async function compressImage(file) {
+  if (!file.type.startsWith('image/')) return file
+
+  const image = new Image()
+  const imageUrl = URL.createObjectURL(file)
+
+  try {
+    await new Promise((resolve, reject) => {
+      image.onload = resolve
+      image.onerror = reject
+      image.src = imageUrl
+    })
+
+    const scale = Math.min(1, Math.sqrt(0.1), 900 / Math.max(image.width, image.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(image.width * scale))
+    canvas.height = Math.max(1, Math.round(image.height * scale))
+
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob(resolve, 'image/jpeg', 0.72)
+    })
+
+    if (!blob) return file
+    return new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' })
+  } finally {
+    URL.revokeObjectURL(imageUrl)
+  }
+}
+
 export async function uploadChatImage(file, userId) {
-  const ext = file.name.split('.').pop()
+  const compressedFile = await compressImage(file)
+  const ext = compressedFile.name.split('.').pop()
   const path = `${userId}/${Date.now()}.${ext}`
-  const { error } = await supabase.storage.from('chat-images').upload(path, file)
+  const { error } = await supabase.storage.from('chat-images').upload(path, compressedFile)
   if (error) throw error
   const { data } = supabase.storage.from('chat-images').getPublicUrl(path)
   return data.publicUrl

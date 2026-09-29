@@ -14,9 +14,15 @@ export default function ChatWindow({ conversation }) {
 
   useEffect(() => {
     let cancelled = false
-    fetchMessages(conversation.id).then((data) => {
+
+    async function loadMessages() {
+      const data = await fetchMessages(conversation.id)
       if (!cancelled) setMessages(data)
-    })
+    }
+
+    loadMessages()
+
+    const intervalId = window.setInterval(loadMessages, 1000)
 
     const channel = supabase
       .channel(`messages:${conversation.id}`)
@@ -36,6 +42,7 @@ export default function ChatWindow({ conversation }) {
 
     return () => {
       cancelled = true
+      window.clearInterval(intervalId)
       supabase.removeChannel(channel)
     }
   }, [conversation.id])
