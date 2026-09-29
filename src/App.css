@@ -132,6 +132,12 @@
   .chat-app.has-active-chat .sidebar {
     display: none;
   }
+
+  .sidebar-brand {
+    padding: 4px 12px;
+    min-height: 0;
+    line-height: 1.2;
+  }
 }
 
 /* ---------- Sidebar ---------- */
