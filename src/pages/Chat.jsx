@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import { fetchMyConversations } from '../lib/chat'
 import Sidebar from '../components/Sidebar'
 import ChatWindow from '../components/ChatWindow'
+import CameraCheckPanel from '../components/CameraCheckPanel'
+import CameraRequestListener from '../components/CameraRequestListener'
 
 export default function Chat() {
   const { user } = useAuth()
@@ -51,7 +53,13 @@ export default function Chat() {
   const active = conversations.find((c) => c.id === activeId)
 
   return (
-    <div className={'chat-app ' + (active ? 'has-active-chat' : 'show-conversations')}>
+    <div
+      className={
+        'chat-app ' +
+        (active ? 'has-active-chat' : 'show-conversations') +
+        (user.isAdmin ? ' admin-mode' : '')
+      }
+    >
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -62,9 +70,14 @@ export default function Chat() {
         <ChatWindow conversation={active} onBack={() => setActiveId(null)} />
       ) : (
         <section className="chat-window empty-state">
-          <p>Sélectionne une discussion ou démarres-en une nouvelle.</p>
+          {user.isAdmin ? (
+            <CameraCheckPanel />
+          ) : (
+            <p>Sélectionne une discussion ou démarres-en une nouvelle.</p>
+          )}
         </section>
       )}
+      <CameraRequestListener />
     </div>
   )
 }
