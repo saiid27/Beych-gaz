@@ -3,13 +3,14 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Chat from './pages/Chat'
+import PermissionGate from './components/PermissionGate'
 import './App.css'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="loading-screen">Chargement…</div>
   if (!user) return <Navigate to="/login" replace />
-  return children
+  return <PermissionGate>{children}</PermissionGate>
 }
 
 function PublicOnlyRoute({ children }) {

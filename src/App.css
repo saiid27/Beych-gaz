@@ -112,6 +112,58 @@
   text-decoration: none;
 }
 
+/* ---------- Permission screen ---------- */
+.permission-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  background: var(--wa-teal-dark);
+  padding: 16px;
+}
+
+.permission-card {
+  background: var(--wa-panel);
+  border-radius: 8px;
+  padding: 16px;
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+}
+
+.permission-card h1 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--wa-text);
+  text-align: center;
+}
+
+.permission-card p {
+  margin: 0;
+  color: var(--wa-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.permission-card button {
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: var(--wa-green);
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.permission-card button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ---------- Chat app layout ---------- */
 .chat-app {
   display: grid;
