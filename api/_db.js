@@ -93,6 +93,30 @@ export async function ensureSchema() {
     grant select, insert on conversations to anon, authenticated;
     grant select, insert on conversation_participants to anon, authenticated;
     grant select, insert on messages to anon, authenticated;
+
+    do $$
+    begin
+      alter publication supabase_realtime add table messages;
+    exception
+      when duplicate_object then null;
+    end;
+    $$;
+
+    do $$
+    begin
+      alter publication supabase_realtime add table conversations;
+    exception
+      when duplicate_object then null;
+    end;
+    $$;
+
+    do $$
+    begin
+      alter publication supabase_realtime add table conversation_participants;
+    exception
+      when duplicate_object then null;
+    end;
+    $$;
   `)
 
   await schemaReady

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabaseClient'
 import { fetchMyConversations } from '../lib/chat'
 import Sidebar from '../components/Sidebar'
 import ChatWindow from '../components/ChatWindow'
@@ -18,11 +19,32 @@ export default function Chat() {
   useEffect(() => {
     reload()
 
-    const intervalId = window.setInterval(() => {
-      reload()
-    }, 1000)
+    const channel = supabase
+      .channel(`conversation-list:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversation_participants',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => reload()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => reload()
+      )
+      .subscribe()
 
-    return () => window.clearInterval(intervalId)
+    return () => {
+      supabase.removeChannel(channel)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id])
 

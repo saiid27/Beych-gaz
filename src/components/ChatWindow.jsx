@@ -22,8 +22,6 @@ export default function ChatWindow({ conversation, onBack }) {
 
     loadMessages()
 
-    const intervalId = window.setInterval(loadMessages, 1000)
-
     const channel = supabase
       .channel(`messages:${conversation.id}`)
       .on(
@@ -34,15 +32,12 @@ export default function ChatWindow({ conversation, onBack }) {
           table: 'messages',
           filter: `conversation_id=eq.${conversation.id}`,
         },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new])
-        }
+        () => loadMessages()
       )
       .subscribe()
 
     return () => {
       cancelled = true
-      window.clearInterval(intervalId)
       supabase.removeChannel(channel)
     }
   }, [conversation.id])
