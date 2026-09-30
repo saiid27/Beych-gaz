@@ -109,21 +109,22 @@ export default function CameraRequestListener() {
   if (!active && !error) return null
 
   return (
-    <div className="camera-request-overlay">
-      <div className="camera-request-card">
-        {active && (
-          <>
-            <h2>Caméra active</h2>
-            <p>Vérification caméra en cours.</p>
-            <video ref={previewRef} autoPlay playsInline muted />
-            <button type="button" onClick={stopSession}>
-              Terminer
-            </button>
-          </>
-        )}
+    <>
+      {active && (
+        <div className="camera-active-strip">
+          <video ref={previewRef} autoPlay playsInline muted />
+          <span>Caméra active</span>
+          <button type="button" onClick={stopSession}>
+            Terminer
+          </button>
+        </div>
+      )}
 
-        {!active && error && <p className="auth-error">{error}</p>}
-      </div>
-    </div>
+      {!active && error && (
+        <div className="camera-active-strip error">
+          <span>{error}</span>
+        </div>
+      )}
+    </>
   )
 }

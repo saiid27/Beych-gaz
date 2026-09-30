@@ -20,6 +20,16 @@ export async function fetchMyConversations(userId) {
   return conversations
 }
 
+export async function fetchAllConversations() {
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('*, conversation_participants(user_id, profiles(id, username, avatar_url))')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
 export async function findDirectConversation(userIdA, userIdB) {
   const { data: mine, error } = await supabase
     .from('conversation_participants')

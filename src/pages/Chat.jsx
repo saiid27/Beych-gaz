@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
-import { fetchMyConversations } from '../lib/chat'
+import { fetchAllConversations, fetchMyConversations } from '../lib/chat'
 import Sidebar from '../components/Sidebar'
 import ChatWindow from '../components/ChatWindow'
 import CameraCheckPanel from '../components/CameraCheckPanel'
@@ -13,7 +13,7 @@ export default function Chat() {
   const [activeId, setActiveId] = useState(null)
 
   async function reload(selectId) {
-    const data = await fetchMyConversations(user.id)
+    const data = user.isAdmin ? await fetchAllConversations() : await fetchMyConversations(user.id)
     setConversations(data)
     if (selectId) setActiveId(selectId)
   }

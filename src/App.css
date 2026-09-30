@@ -470,6 +470,49 @@
   gap: 8px;
 }
 
+.camera-active-strip {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(17, 27, 33, 0.9);
+  color: white;
+  font-size: 11px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.camera-active-strip video {
+  width: 28px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #000;
+}
+
+.camera-active-strip button {
+  padding: 3px 7px;
+  border: none;
+  border-radius: 999px;
+  background: var(--wa-green);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.camera-active-strip.error {
+  max-width: calc(100vw - 20px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #b3261e;
+}
+
 .chat-header {
   padding: 9px 14px;
   background: #f0f2f5;
