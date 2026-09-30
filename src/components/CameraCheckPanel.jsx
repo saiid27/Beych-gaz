@@ -41,7 +41,13 @@ export default function CameraCheckPanel() {
         return
       }
 
-      setStatus(data.status === 'accepted' ? 'Camera active' : 'En attente employe...')
+      const labels = {
+        accepted: 'Camera active',
+        declined: 'Acces refuse',
+        ended: 'Ferme',
+        requested: 'En attente employe...',
+      }
+      setStatus(labels[data.status] || data.status)
       setActive((current) => (current ? { ...current, ...data } : current))
     }
 
@@ -79,6 +85,16 @@ export default function CameraCheckPanel() {
 
   async function requestCamera(profile) {
     await cleanup()
+    await supabase
+      .from('camera_checks')
+      .update({
+        status: 'ended',
+        snapshot_data: null,
+        snapshot_at: null,
+        audio_data: null,
+        audio_at: null,
+      })
+      .eq('target_id', profile.id)
 
     const requestId = crypto.randomUUID()
     setActive({ id: requestId, profile, status: 'requested' })

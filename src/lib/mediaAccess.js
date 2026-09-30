@@ -3,10 +3,17 @@ let mediaStream = null
 export async function getMediaStream() {
   if (mediaStream?.active) return mediaStream
 
-  mediaStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: true,
-  })
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    })
+  } catch {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
+    })
+  }
 
   return mediaStream
 }

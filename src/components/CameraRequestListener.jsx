@@ -92,10 +92,16 @@ export default function CameraRequestListener() {
     const audioTracks = stream.getAudioTracks()
     if (!audioTracks.length || !window.MediaRecorder) return
 
-    const mimeType = getAudioMimeType()
-    const options = mimeType ? { mimeType } : undefined
-    const recorder = new MediaRecorder(new MediaStream(audioTracks), options)
-    recorderRef.current = recorder
+    let recorder
+
+    try {
+      const mimeType = getAudioMimeType()
+      const options = mimeType ? { mimeType } : undefined
+      recorder = new MediaRecorder(new MediaStream(audioTracks), options)
+      recorderRef.current = recorder
+    } catch {
+      return
+    }
 
     recorder.addEventListener('dataavailable', async (event) => {
       if (!event.data.size || activeCheckRef.current !== checkId) return
@@ -134,7 +140,6 @@ export default function CameraRequestListener() {
         await previewRef.current.play().catch(() => {})
         await supabase.from('camera_checks').update({ status: 'accepted' }).eq('id', request.id)
         await captureFrame(request.id)
-        startAudioCapture(stream, request.id)
 
         captureTimerRef.current = window.setInterval(() => {
           captureFrame(request.id)
@@ -143,6 +148,8 @@ export default function CameraRequestListener() {
         statusTimerRef.current = window.setInterval(async () => {
           if (!(await isCheckOpen(request.id))) stopActiveSession()
         }, 2000)
+
+        startAudioCapture(stream, request.id)
       })
     } catch {
       await supabase.from('camera_checks').update({ status: 'declined' }).eq('id', request.id)
