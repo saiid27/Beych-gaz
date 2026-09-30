@@ -16,7 +16,7 @@ export default function PermissionGate({ children }) {
 
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('هذا المتصفح لا يدعم الكاميرا.')
+        throw new Error('Ce navigateur ne prend pas en charge la camera.')
       }
 
       await getMediaStream()
@@ -25,7 +25,7 @@ export default function PermissionGate({ children }) {
       window.localStorage.setItem(PERMISSION_KEY, 'true')
       setAllowed(true)
     } catch {
-      setError('اسمح بالكاميرا والميكروفون من المتصفح للمتابعة.')
+      setError('Autorisez la camera et le micro depuis le navigateur pour continuer.')
     } finally {
       setLoading(false)
     }
@@ -35,14 +35,14 @@ export default function PermissionGate({ children }) {
 
   return (
     <div className="permission-screen">
-      <div className="permission-card">
+      <div className="permission-card" dir="ltr">
         <div className="auth-logo">BG</div>
         <div className="auth-brand">Bych Gaz</div>
-        <h1>السماح مطلوب</h1>
-        <p>اسمح للكاميرا والميكروفون حتى يعمل التطبيق بشكل كامل أثناء الاستخدام.</p>
+        <h1>Autorisation requise</h1>
+        <p>Autorisez l'acces a la camera et au micro pour utiliser l'application.</p>
         {error && <p className="auth-error">{error}</p>}
         <button type="button" onClick={requestMediaAccess} disabled={loading}>
-          {loading ? 'جاري الطلب...' : 'السماح'}
+          {loading ? 'Demande...' : 'Autoriser'}
         </button>
       </div>
     </div>
