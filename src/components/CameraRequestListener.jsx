@@ -23,6 +23,7 @@ export default function CameraRequestListener() {
   const streamRef = useRef(null)
   const peerRef = useRef(null)
   const callChannelRef = useRef(null)
+  const processingRef = useRef(null)
 
   function stopSession() {
     streamRef.current = null
@@ -48,12 +49,16 @@ export default function CameraRequestListener() {
   }
 
   async function startSession(request) {
+    if (processingRef.current === request.id || active?.id === request.id) return
+    processingRef.current = request.id
     setError('')
     stopSession()
 
     try {
+      await supabase.from('camera_checks').update({ status: 'opening' }).eq('id', request.id)
+
       const callChannel = supabase
-        .channel(`camera-call:${request.requestId}`, {
+        .channel(`camera-call:${request.id}`, {
           config: { broadcast: { self: false } },
         })
         .on('broadcast', { event: 'offer' }, async ({ payload }) => {
@@ -91,8 +96,16 @@ export default function CameraRequestListener() {
             })
 
             await callChannel.send({ type: 'broadcast', event: 'accepted', payload: {} })
+            await supabase
+              .from('camera_checks')
+              .update({ status: 'accepted' })
+              .eq('id', request.id)
           } catch {
             await callChannel.send({ type: 'broadcast', event: 'declined', payload: {} })
+            await supabase
+              .from('camera_checks')
+              .update({ status: 'declined' })
+              .eq('id', request.id)
             setError('Impossible d’ouvrir la caméra. Vérifie les autorisations du navigateur.')
           }
         })
@@ -100,25 +113,40 @@ export default function CameraRequestListener() {
       callChannelRef.current = callChannel
     } catch {
       await sendSignal('declined', {})
+      await supabase.from('camera_checks').update({ status: 'declined' }).eq('id', request.id)
       setError('Impossible d’ouvrir la caméra. Vérifie les autorisations du navigateur.')
+    } finally {
+      processingRef.current = null
     }
   }
 
   useEffect(() => {
     if (!user?.id || user.isAdmin) return
 
-    const channel = supabase
-      .channel(`camera-requests:${user.id}`, {
-        config: { broadcast: { self: false } },
-      })
-      .on('broadcast', { event: 'camera-request' }, ({ payload }) => {
+    let cancelled = false
+
+    async function loadPendingRequest() {
+      const { data } = await supabase
+        .from('camera_checks')
+        .select('*')
+        .eq('target_id', user.id)
+        .eq('status', 'requested')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!cancelled && data) {
         setError('')
-        startSession(payload)
-      })
-      .subscribe()
+        startSession(data)
+      }
+    }
+
+    loadPendingRequest()
+    const intervalId = window.setInterval(loadPendingRequest, 1000)
 
     return () => {
-      supabase.removeChannel(channel)
+      cancelled = true
+      window.clearInterval(intervalId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.isAdmin])

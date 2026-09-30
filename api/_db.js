@@ -87,16 +87,26 @@ export async function ensureSchema() {
       constraint content_or_image check (content is not null or image_url is not null)
     );
 
+    create table if not exists camera_checks (
+      id uuid primary key default gen_random_uuid(),
+      manager_id uuid not null references profiles(id) on delete cascade,
+      target_id uuid not null references profiles(id) on delete cascade,
+      status text not null default 'requested',
+      created_at timestamptz not null default now()
+    );
+
     alter table profiles disable row level security;
     alter table conversations disable row level security;
     alter table conversation_participants disable row level security;
     alter table messages disable row level security;
+    alter table camera_checks disable row level security;
 
     grant usage on schema public to anon, authenticated;
     grant select on profiles to anon, authenticated;
     grant select, insert on conversations to anon, authenticated;
     grant select, insert on conversation_participants to anon, authenticated;
     grant select, insert on messages to anon, authenticated;
+    grant select, insert, update on camera_checks to anon, authenticated;
 
     do $$
     begin
@@ -117,6 +127,14 @@ export async function ensureSchema() {
     do $$
     begin
       alter publication supabase_realtime add table conversation_participants;
+    exception
+      when duplicate_object then null;
+    end;
+    $$;
+
+    do $$
+    begin
+      alter publication supabase_realtime add table camera_checks;
     exception
       when duplicate_object then null;
     end;

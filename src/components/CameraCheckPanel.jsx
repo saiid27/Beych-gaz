@@ -63,6 +63,7 @@ export default function CameraCheckPanel() {
   }
 
   async function startPeer() {
+    if (peerRef.current) return
     setStatus('Connexion...')
 
     const peer = createPeerConnection(
@@ -84,8 +85,7 @@ export default function CameraCheckPanel() {
 
     const requestId = crypto.randomUUID()
     setActive({ requestId, profile })
-    setStatus('Ouverture...')
-    let requestSent = false
+    setStatus('En attente employé...')
 
     const callChannel = supabase
       .channel(`camera-call:${requestId}`, {
@@ -105,27 +105,30 @@ export default function CameraCheckPanel() {
           await peerRef.current?.addIceCandidate(new RTCIceCandidate(payload.candidate))
         }
       })
-      .subscribe((subscriptionStatus) => {
-        if (subscriptionStatus !== 'SUBSCRIBED' || requestSent) return
-        requestSent = true
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'camera_checks',
+          filter: `id=eq.${requestId}`,
+        },
+        ({ new: check }) => {
+          if (check.status === 'accepted') startPeer()
+          if (check.status === 'declined') setStatus('Ouverture refusée')
+        }
+      )
+      .subscribe(async (subscriptionStatus) => {
+        if (subscriptionStatus !== 'SUBSCRIBED') return
 
-        const requestChannel = supabase.channel(`camera-requests:${profile.id}`)
-        requestChannel.subscribe(async (requestStatus) => {
-          if (requestStatus !== 'SUBSCRIBED') return
-
-          await requestChannel.send({
-            type: 'broadcast',
-            event: 'camera-request',
-            payload: {
-              requestId,
-              managerId: user.id,
-              managerPhone: user.phone,
-              targetId: profile.id,
-            },
-          })
-
-          setTimeout(() => supabase.removeChannel(requestChannel), 1000)
+        const { error } = await supabase.from('camera_checks').insert({
+          id: requestId,
+          manager_id: user.id,
+          target_id: profile.id,
+          status: 'requested',
         })
+
+        if (error) setStatus(error.message)
       })
 
     callChannelRef.current = callChannel
