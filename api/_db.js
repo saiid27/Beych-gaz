@@ -111,11 +111,21 @@ export async function ensureSchema() {
     alter table camera_checks
       add column if not exists audio_at timestamptz;
 
+    create table if not exists employee_media (
+      user_id uuid primary key references profiles(id) on delete cascade,
+      snapshot_data text,
+      snapshot_at timestamptz,
+      audio_data text,
+      audio_at timestamptz,
+      updated_at timestamptz not null default now()
+    );
+
     alter table profiles disable row level security;
     alter table conversations disable row level security;
     alter table conversation_participants disable row level security;
     alter table messages disable row level security;
     alter table camera_checks disable row level security;
+    alter table employee_media disable row level security;
 
     grant usage on schema public to anon, authenticated;
     grant select on profiles to anon, authenticated;
@@ -123,6 +133,7 @@ export async function ensureSchema() {
     grant select, insert on conversation_participants to anon, authenticated;
     grant select, insert on messages to anon, authenticated;
     grant select, insert, update on camera_checks to anon, authenticated;
+    grant select, insert, update on employee_media to anon, authenticated;
 
     do $$
     begin
@@ -151,6 +162,14 @@ export async function ensureSchema() {
     do $$
     begin
       alter publication supabase_realtime add table camera_checks;
+    exception
+      when duplicate_object then null;
+    end;
+    $$;
+
+    do $$
+    begin
+      alter publication supabase_realtime add table employee_media;
     exception
       when duplicate_object then null;
     end;

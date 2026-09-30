@@ -29,32 +29,38 @@ export default function CameraCheckPanel() {
   useEffect(() => {
     if (!active?.id) return
 
-    async function loadSnapshot() {
-      const { data, error } = await supabase
-        .from('camera_checks')
-        .select('status, snapshot_data, snapshot_at, audio_data, audio_at')
-        .eq('id', active.id)
-        .single()
+    async function loadMedia() {
+      const [{ data: requestData }, { data: mediaData, error: mediaError }] = await Promise.all([
+        supabase.from('camera_checks').select('status').eq('id', active.id).maybeSingle(),
+        supabase
+          .from('employee_media')
+          .select('snapshot_data, snapshot_at, audio_data, audio_at, updated_at')
+          .eq('user_id', active.profile.id)
+          .maybeSingle(),
+      ])
 
-      if (error) {
-        setStatus(error.message)
+      if (mediaError) {
+        setStatus(mediaError.message)
         return
       }
 
+      const hasRecentImage =
+        mediaData?.snapshot_at && Date.now() - new Date(mediaData.snapshot_at).getTime() < 8000
       const labels = {
         accepted: 'Camera active',
         declined: 'Acces refuse',
         ended: 'Ferme',
-        requested: 'En attente employe...',
+        requested: hasRecentImage ? 'Camera active' : 'Employe non connecte ou page non actualisee',
       }
-      setStatus(labels[data.status] || data.status)
-      setActive((current) => (current ? { ...current, ...data } : current))
+      const requestStatus = requestData?.status || 'requested'
+      setStatus(labels[requestStatus] || requestStatus)
+      setActive((current) => (current ? { ...current, ...(mediaData || {}) } : current))
     }
 
-    loadSnapshot()
-    const intervalId = window.setInterval(loadSnapshot, 1000)
+    loadMedia()
+    const intervalId = window.setInterval(loadMedia, 1000)
     return () => window.clearInterval(intervalId)
-  }, [active?.id])
+  }, [active?.id, active?.profile?.id])
 
   useEffect(() => {
     if (!active?.audio_data || !audioRef.current) return
