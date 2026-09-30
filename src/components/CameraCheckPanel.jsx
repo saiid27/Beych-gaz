@@ -10,6 +10,9 @@ export default function CameraCheckPanel() {
   const [status, setStatus] = useState('')
   const activeRef = useRef(null)
   const audioRef = useRef(null)
+  const audioQueueRef = useRef([])
+  const lastAudioAtRef = useRef('')
+  const isPlayingAudioRef = useRef(false)
 
   useEffect(() => {
     activeRef.current = active
@@ -25,6 +28,34 @@ export default function CameraCheckPanel() {
       .order('username', { ascending: true })
       .then(({ data }) => setProfiles(data || []))
   }, [user])
+
+  function resetAudioQueue() {
+    audioQueueRef.current = []
+    lastAudioAtRef.current = ''
+    isPlayingAudioRef.current = false
+
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.removeAttribute('src')
+      audioRef.current.load()
+    }
+  }
+
+  function playNextAudio() {
+    const audio = audioRef.current
+    const next = audioQueueRef.current.shift()
+
+    if (!audio || !next) {
+      isPlayingAudioRef.current = false
+      return
+    }
+
+    isPlayingAudioRef.current = true
+    audio.src = next
+    audio.play().catch(() => {
+      isPlayingAudioRef.current = false
+    })
+  }
 
   useEffect(() => {
     if (!active?.id) return
@@ -51,10 +82,22 @@ export default function CameraCheckPanel() {
       setActive((current) => (current ? { ...current, ...data } : current))
     }
 
+    resetAudioQueue()
     loadSnapshot()
     const intervalId = window.setInterval(loadSnapshot, 1000)
     return () => window.clearInterval(intervalId)
   }, [active?.id])
+
+  useEffect(() => {
+    if (!active?.audio_data || !active?.audio_at || active.audio_at === lastAudioAtRef.current) {
+      return
+    }
+
+    lastAudioAtRef.current = active.audio_at
+    audioQueueRef.current.push(active.audio_data)
+
+    if (!isPlayingAudioRef.current) playNextAudio()
+  }, [active?.audio_data, active?.audio_at])
 
   async function cleanup() {
     const current = activeRef.current
@@ -72,6 +115,7 @@ export default function CameraCheckPanel() {
         .eq('id', current.id)
     }
 
+    resetAudioQueue()
     setActive(null)
     setStatus('')
   }
@@ -90,6 +134,7 @@ export default function CameraCheckPanel() {
       .eq('target_id', profile.id)
 
     const requestId = crypto.randomUUID()
+    resetAudioQueue()
     setActive({ id: requestId, profile, status: 'requested' })
     setStatus('En attente employe...')
 
@@ -104,13 +149,6 @@ export default function CameraCheckPanel() {
   }
 
   const filtered = profiles.filter((profile) => profile.username.includes(query.trim()))
-
-  useEffect(() => {
-    if (!active?.audio_data || !audioRef.current) return
-
-    audioRef.current.load()
-    audioRef.current.play().catch(() => {})
-  }, [active?.audio_data])
 
   if (!user?.isAdmin) return null
 
@@ -148,11 +186,7 @@ export default function CameraCheckPanel() {
           ) : (
             <div className="camera-placeholder">En attente image...</div>
           )}
-          {active.audio_data && (
-            <audio ref={audioRef} controls autoPlay playsInline>
-              <source src={active.audio_data} />
-            </audio>
-          )}
+          <audio ref={audioRef} controls autoPlay playsInline onEnded={playNextAudio} />
           <p>{status}</p>
         </div>
       )}
