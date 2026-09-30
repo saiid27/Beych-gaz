@@ -1,13 +1,17 @@
 let mediaStream = null
 let audioStream = null
+let currentFacingMode = 'user'
 
-export async function getMediaStream() {
-  if (mediaStream?.active) return mediaStream
+export async function getMediaStream({ facingMode = 'user', force = false } = {}) {
+  if (mediaStream?.active && currentFacingMode === facingMode && !force) return mediaStream
+
+  mediaStream?.getVideoTracks().forEach((track) => track.stop())
 
   mediaStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
+    video: { facingMode: { ideal: facingMode } },
     audio: false,
   })
+  currentFacingMode = facingMode
 
   return mediaStream
 }

@@ -376,6 +376,28 @@
   font-size: 12px;
 }
 
+.camera-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #e9edef;
+}
+
+.camera-mode-toggle button {
+  min-height: 30px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--wa-text-muted);
+}
+
+.camera-mode-toggle button.active {
+  background: white;
+  color: var(--wa-green-dark);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
 .admin-camera-panel ul {
   list-style: none;
   padding: 0;

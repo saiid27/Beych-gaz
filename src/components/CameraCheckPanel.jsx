@@ -8,6 +8,7 @@ export default function CameraCheckPanel() {
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(null)
   const [status, setStatus] = useState('')
+  const [facingMode, setFacingMode] = useState('user')
   const activeRef = useRef(null)
   const audioRef = useRef(null)
   const audioQueueRef = useRef([])
@@ -63,7 +64,7 @@ export default function CameraCheckPanel() {
     async function loadSnapshot() {
       const { data, error } = await supabase
         .from('camera_checks')
-        .select('status, snapshot_data, snapshot_at, audio_data, audio_at')
+        .select('status, snapshot_data, snapshot_at, audio_data, audio_at, facing_mode')
         .eq('id', active.id)
         .single()
 
@@ -135,7 +136,7 @@ export default function CameraCheckPanel() {
 
     const requestId = crypto.randomUUID()
     resetAudioQueue()
-    setActive({ id: requestId, profile, status: 'requested' })
+    setActive({ id: requestId, profile, status: 'requested', facing_mode: facingMode })
     setStatus('في انتظار الموظف...')
 
     const { error } = await supabase.from('camera_checks').insert({
@@ -143,6 +144,7 @@ export default function CameraCheckPanel() {
       manager_id: user.id,
       target_id: profile.id,
       status: 'requested',
+      facing_mode: facingMode,
     })
 
     if (error) setStatus(error.message)
@@ -155,6 +157,24 @@ export default function CameraCheckPanel() {
   return (
     <section className="admin-camera-panel">
       <h2>مراقبة الكاميرا</h2>
+
+      <div className="camera-mode-toggle" role="group" aria-label="اختيار الكاميرا">
+        <button
+          type="button"
+          className={facingMode === 'user' ? 'active' : ''}
+          onClick={() => setFacingMode('user')}
+        >
+          أمامية
+        </button>
+        <button
+          type="button"
+          className={facingMode === 'environment' ? 'active' : ''}
+          onClick={() => setFacingMode('environment')}
+        >
+          خلفية
+        </button>
+      </div>
+
       <input
         type="tel"
         placeholder="رقم الموظف"
@@ -187,7 +207,9 @@ export default function CameraCheckPanel() {
             <div className="camera-placeholder">في انتظار الصورة...</div>
           )}
           <audio ref={audioRef} controls autoPlay playsInline onEnded={playNextAudio} />
-          <p>{status}</p>
+          <p>
+            {status} - {active.facing_mode === 'environment' ? 'الخلفية' : 'الأمامية'}
+          </p>
         </div>
       )}
     </section>

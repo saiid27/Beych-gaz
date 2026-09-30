@@ -89,6 +89,7 @@ create table if not exists camera_checks (
   snapshot_at timestamptz,
   audio_data text,
   audio_at timestamptz,
+  facing_mode text not null default 'user',
   created_at timestamptz not null default now()
 );
 
@@ -103,6 +104,9 @@ alter table camera_checks
 
 alter table camera_checks
   add column if not exists audio_at timestamptz;
+
+alter table camera_checks
+  add column if not exists facing_mode text not null default 'user';
 
 drop table if exists employee_media;
 

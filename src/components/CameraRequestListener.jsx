@@ -164,7 +164,10 @@ export default function CameraRequestListener() {
     processingRef.current = request.id
 
     try {
-      const stream = await getMediaStream()
+      const stream = await getMediaStream({
+        facingMode: request.facing_mode || 'user',
+        force: true,
+      })
       setActive(request)
 
       setTimeout(async () => {
