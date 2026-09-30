@@ -17,7 +17,7 @@ async function postAuth(path, payload) {
   const data = await response.json()
 
   if (!response.ok) {
-    return { data: null, error: { message: data.error || 'Erreur serveur' } }
+    return { data: null, error: { message: data.error || 'حدث خطأ في الخادم' } }
   }
 
   return { data, error: null }

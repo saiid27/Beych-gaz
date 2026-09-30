@@ -26,33 +26,37 @@ export default function Login() {
   return (
     <div className="auth-screen">
       <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-logo">BG</div>
         <div className="auth-brand">Bych Gaz</div>
-        <h1>Se connecter</h1>
+        <h1>تسجيل الدخول</h1>
+        <p className="auth-subtitle">ادخل رقم الهاتف وكلمة المرور للمتابعة.</p>
         {error && <p className="auth-error">{error}</p>}
         <label>
-          Numéro de téléphone
+          رقم الهاتف
           <input
             type="tel"
-            placeholder="+222 12345678"
+            inputMode="numeric"
+            placeholder="مثال: 34605765"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required
           />
         </label>
         <label>
-          Mot de passe
+          كلمة المرور
           <input
             type="password"
+            placeholder="اكتب كلمة المرور"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </label>
         <button type="submit" disabled={loading}>
-          {loading ? 'Connexion…' : 'Se connecter'}
+          {loading ? 'جاري الدخول...' : 'دخول'}
         </button>
         <p className="auth-switch">
-          Pas de compte ? <Link to="/signup">S'inscrire</Link>
+          ليس لديك حساب؟ <Link to="/signup">إنشاء حساب</Link>
         </p>
       </form>
     </div>

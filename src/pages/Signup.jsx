@@ -26,23 +26,27 @@ export default function Signup() {
   return (
     <div className="auth-screen">
       <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-logo">BG</div>
         <div className="auth-brand">Bych Gaz</div>
-        <h1>Créer un compte</h1>
+        <h1>إنشاء حساب</h1>
+        <p className="auth-subtitle">سجل برقم الهاتف وكلمة مرور فقط.</p>
         {error && <p className="auth-error">{error}</p>}
         <label>
-          Numéro de téléphone
+          رقم الهاتف
           <input
             type="tel"
-            placeholder="+222 12345678"
+            inputMode="numeric"
+            placeholder="مثال: 34605765"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required
           />
         </label>
         <label>
-          Mot de passe
+          كلمة المرور
           <input
             type="password"
+            placeholder="6 أحرف على الأقل"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -50,10 +54,10 @@ export default function Signup() {
           />
         </label>
         <button type="submit" disabled={loading}>
-          {loading ? 'Création…' : "S'inscrire"}
+          {loading ? 'جاري الإنشاء...' : 'إنشاء الحساب'}
         </button>
         <p className="auth-switch">
-          Déjà un compte ? <Link to="/login">Se connecter</Link>
+          لديك حساب؟ <Link to="/login">تسجيل الدخول</Link>
         </p>
       </form>
     </div>

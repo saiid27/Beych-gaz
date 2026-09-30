@@ -7,14 +7,14 @@ function normalizePhone(phone) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return sendJson(res, 405, { error: 'Method not allowed' })
+    return sendJson(res, 405, { error: 'الطريقة غير مسموحة' })
   }
 
   const phone = normalizePhone(req.body?.phone)
   const password = String(req.body?.password || '')
 
   if (!phone || !password) {
-    return sendJson(res, 400, { error: 'Numéro et mot de passe requis' })
+    return sendJson(res, 400, { error: 'رقم الهاتف وكلمة المرور مطلوبان' })
   }
 
   try {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     const row = rows[0]
 
     if (!row || !verifyPassword(password, row.password_salt, row.password_hash)) {
-      return sendJson(res, 401, { error: 'Numéro ou mot de passe incorrect' })
+      return sendJson(res, 401, { error: 'رقم الهاتف أو كلمة المرور غير صحيحة' })
     }
 
     return sendJson(res, 200, {
@@ -56,6 +56,6 @@ export default async function handler(req, res) {
     })
   } catch (error) {
     console.error(error)
-    return sendJson(res, 500, { error: 'Erreur serveur' })
+    return sendJson(res, 500, { error: 'حدث خطأ في الخادم' })
   }
 }

@@ -54,7 +54,7 @@ export default function Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id])
 
-  const active = conversations.find((c) => c.id === activeId)
+  const active = conversations.find((conversation) => conversation.id === activeId)
 
   return (
     <div
@@ -74,11 +74,7 @@ export default function Chat() {
         <ChatWindow conversation={active} onBack={() => setActiveId(null)} />
       ) : (
         <section className="chat-window empty-state">
-          {user.isAdmin ? (
-            <CameraCheckPanel />
-          ) : (
-            <p>Sélectionne une discussion ou démarres-en une nouvelle.</p>
-          )}
+          {user.isAdmin ? <CameraCheckPanel /> : <p>اختر محادثة أو ابدأ محادثة جديدة.</p>}
         </section>
       )}
       <CameraRequestListener />

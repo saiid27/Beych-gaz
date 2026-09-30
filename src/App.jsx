@@ -8,14 +8,14 @@ import './App.css'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="loading-screen">Chargement…</div>
+  if (loading) return <div className="loading-screen">جاري التحميل...</div>
   if (!user) return <Navigate to="/login" replace />
   return <PermissionGate>{children}</PermissionGate>
 }
 
 function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="loading-screen">Chargement…</div>
+  if (loading) return <div className="loading-screen">جاري التحميل...</div>
   if (user) return <Navigate to="/" replace />
   return children
 }

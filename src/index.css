@@ -11,7 +11,7 @@
   --wa-text-muted: #667781;
 
   color-scheme: light;
-  font: 15px/1.4 system-ui, 'Segoe UI', Roboto, sans-serif;
+  font: 15px/1.4 system-ui, 'Segoe UI', Tahoma, Arial, sans-serif;
 }
 
 * {
@@ -22,6 +22,7 @@ body {
   margin: 0;
   background: var(--wa-bg);
   color: var(--wa-text);
+  direction: rtl;
 }
 
 #root {

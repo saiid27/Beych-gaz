@@ -58,10 +58,10 @@ export default function NewConversationModal({ onClose, onCreated }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Nouvelle discussion</h2>
+        <h2>محادثة جديدة</h2>
         <input
           type="text"
-          placeholder="Rechercher un utilisateur…"
+          placeholder="ابحث برقم المستخدم"
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           autoFocus
@@ -69,9 +69,9 @@ export default function NewConversationModal({ onClose, onCreated }) {
 
         {selected.length > 0 && (
           <div className="selected-chips">
-            {selected.map((p) => (
-              <span key={p.id} className="chip" onClick={() => toggleSelect(p)}>
-                {p.username} ✕
+            {selected.map((profile) => (
+              <span key={profile.id} className="chip" onClick={() => toggleSelect(profile)}>
+                {profile.username} ×
               </span>
             ))}
           </div>
@@ -80,30 +80,30 @@ export default function NewConversationModal({ onClose, onCreated }) {
         {selected.length > 1 && (
           <input
             type="text"
-            placeholder="Nom du groupe (optionnel)"
+            placeholder="اسم المجموعة اختياري"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
           />
         )}
 
         <ul className="user-results">
-          {results.map((p) => (
+          {results.map((profile) => (
             <li
-              key={p.id}
-              className={selected.some((s) => s.id === p.id) ? 'selected' : ''}
-              onClick={() => toggleSelect(p)}
+              key={profile.id}
+              className={selected.some((selectedProfile) => selectedProfile.id === profile.id) ? 'selected' : ''}
+              onClick={() => toggleSelect(profile)}
             >
-              {p.username}
+              {profile.username}
             </li>
           ))}
         </ul>
 
         <div className="modal-actions">
           <button type="button" className="secondary" onClick={onClose}>
-            Annuler
+            إلغاء
           </button>
           <button type="button" disabled={selected.length === 0 || loading} onClick={handleCreate}>
-            {loading ? 'Création…' : 'Démarrer'}
+            {loading ? 'جاري الإنشاء...' : 'بدء'}
           </button>
         </div>
       </div>

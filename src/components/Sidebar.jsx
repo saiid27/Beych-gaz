@@ -3,11 +3,9 @@ import { useAuth } from '../context/AuthContext'
 import NewConversationModal from './NewConversationModal'
 
 function conversationLabel(conversation, currentUserId) {
-  if (conversation.is_group) return conversation.name || 'Groupe'
-  const other = conversation.conversation_participants.find(
-    (p) => p.user_id !== currentUserId
-  )
-  return other?.profiles?.username || 'Utilisateur'
+  if (conversation.is_group) return conversation.name || 'مجموعة'
+  const other = conversation.conversation_participants.find((p) => p.user_id !== currentUserId)
+  return other?.profiles?.username || 'مستخدم'
 }
 
 export default function Sidebar({ conversations, activeId, onSelect, onCreated }) {
@@ -20,10 +18,10 @@ export default function Sidebar({ conversations, activeId, onSelect, onCreated }
       <div className="sidebar-header">
         <span className="me">{profile?.username}</span>
         <div className="sidebar-actions">
-          <button type="button" onClick={() => setShowModal(true)} title="Nouvelle discussion">
+          <button type="button" onClick={() => setShowModal(true)} title="محادثة جديدة">
             +
           </button>
-          <button type="button" onClick={signOut} title="Déconnexion" className="secondary">
+          <button type="button" onClick={signOut} title="تسجيل الخروج" className="secondary">
             ⏻
           </button>
         </div>
@@ -31,16 +29,18 @@ export default function Sidebar({ conversations, activeId, onSelect, onCreated }
 
       <ul className="conversation-list">
         {conversations.length === 0 && (
-          <li className="empty-hint">Aucune discussion. Clique sur + pour en démarrer une.</li>
+          <li className="empty-hint">لا توجد محادثات. اضغط + لبدء محادثة جديدة.</li>
         )}
-        {conversations.map((c) => (
+        {conversations.map((conversation) => (
           <li
-            key={c.id}
-            className={c.id === activeId ? 'active' : ''}
-            onClick={() => onSelect(c.id)}
+            key={conversation.id}
+            className={conversation.id === activeId ? 'active' : ''}
+            onClick={() => onSelect(conversation.id)}
           >
-            <div className="avatar">{conversationLabel(c, profile?.id)[0]?.toUpperCase()}</div>
-            <span>{conversationLabel(c, profile?.id)}</span>
+            <div className="avatar">
+              {conversationLabel(conversation, profile?.id)[0]?.toUpperCase()}
+            </div>
+            <span>{conversationLabel(conversation, profile?.id)}</span>
           </li>
         ))}
       </ul>

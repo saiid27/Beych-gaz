@@ -296,14 +296,14 @@ export default function ChatWindow({ conversation, onBack }) {
     <section className="chat-window">
       <header className="chat-header">
         <button type="button" className="back-btn" onClick={onBack} aria-label="Retour">
-          &lt;
+          رجوع
         </button>
         <span>{conversationLabel(conversation, profile?.id)}</span>
         <div className="chat-header-actions">
-          <button type="button" aria-label="Appel vocal">
+          <button type="button" aria-label="اتصال صوتي" title="اتصال صوتي">
             <PhoneIcon />
           </button>
-          <button type="button" aria-label="Appel video">
+          <button type="button" aria-label="اتصال فيديو" title="اتصال فيديو">
             <VideoIcon />
           </button>
         </div>
@@ -342,7 +342,7 @@ export default function ChatWindow({ conversation, onBack }) {
           className="attach-btn"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading || recording}
-          title="Envoyer une image"
+          title="إرسال صورة"
         >
           +
         </button>
@@ -357,7 +357,7 @@ export default function ChatWindow({ conversation, onBack }) {
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={recording ? `Recording ${formatSeconds(recordSeconds)}` : 'Ecrire un message...'}
+          placeholder={recording ? `جاري التسجيل ${formatSeconds(recordSeconds)}` : 'اكتب رسالة...'}
           disabled={recording}
         />
         <button
@@ -365,12 +365,12 @@ export default function ChatWindow({ conversation, onBack }) {
           className={'record-btn' + (recording ? ' recording' : '')}
           onClick={handleRecordClick}
           disabled={uploading}
-          title={recording ? 'Arreter et envoyer' : 'Note vocale'}
+          title={recording ? 'إيقاف وإرسال' : 'ملاحظة صوتية'}
         >
-          {recording ? 'Stop' : <MicIcon />}
+          {recording ? 'إيقاف' : <MicIcon />}
         </button>
         <button type="submit" disabled={recording || uploading}>
-          Envoyer
+          إرسال
         </button>
       </form>
     </section>

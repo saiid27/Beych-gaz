@@ -7,18 +7,18 @@ function normalizePhone(phone) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return sendJson(res, 405, { error: 'Method not allowed' })
+    return sendJson(res, 405, { error: 'الطريقة غير مسموحة' })
   }
 
   const phone = normalizePhone(req.body?.phone)
   const password = String(req.body?.password || '')
 
   if (phone.length < 6) {
-    return sendJson(res, 400, { error: 'Numéro de téléphone invalide' })
+    return sendJson(res, 400, { error: 'رقم الهاتف غير صالح' })
   }
 
   if (password.length < 6) {
-    return sendJson(res, 400, { error: 'Le mot de passe doit contenir au moins 6 caractères' })
+    return sendJson(res, 400, { error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' })
   }
 
   await ensureSchema()
@@ -60,11 +60,11 @@ export default async function handler(req, res) {
     await client.query('rollback')
 
     if (error.code === '23505') {
-      return sendJson(res, 409, { error: 'Ce numéro existe déjà' })
+      return sendJson(res, 409, { error: 'هذا الرقم مسجل من قبل' })
     }
 
     console.error(error)
-    return sendJson(res, 500, { error: 'Erreur serveur' })
+    return sendJson(res, 500, { error: 'حدث خطأ في الخادم' })
   } finally {
     client.release()
   }

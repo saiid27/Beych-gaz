@@ -73,10 +73,10 @@ export default function CameraCheckPanel() {
       }
 
       const labels = {
-        accepted: 'Camera active',
-        declined: 'Acces refuse',
-        ended: 'Ferme',
-        requested: 'En attente employe...',
+        accepted: 'الكاميرا تعمل',
+        declined: 'تم رفض الوصول',
+        ended: 'مغلق',
+        requested: 'في انتظار الموظف...',
       }
       setStatus(labels[data.status] || data.status)
       setActive((current) => (current ? { ...current, ...data } : current))
@@ -136,7 +136,7 @@ export default function CameraCheckPanel() {
     const requestId = crypto.randomUUID()
     resetAudioQueue()
     setActive({ id: requestId, profile, status: 'requested' })
-    setStatus('En attente employe...')
+    setStatus('في انتظار الموظف...')
 
     const { error } = await supabase.from('camera_checks').insert({
       id: requestId,
@@ -154,10 +154,10 @@ export default function CameraCheckPanel() {
 
   return (
     <section className="admin-camera-panel">
-      <h2>Controle camera</h2>
+      <h2>مراقبة الكاميرا</h2>
       <input
         type="tel"
-        placeholder="Numero employe"
+        placeholder="رقم الموظف"
         value={query}
         onChange={(event) => setQuery(event.target.value.replace(/\D/g, ''))}
       />
@@ -167,7 +167,7 @@ export default function CameraCheckPanel() {
           <li key={profile.id}>
             <span>{profile.username}</span>
             <button type="button" onClick={() => requestCamera(profile)}>
-              Ouvrir
+              فتح
             </button>
           </li>
         ))}
@@ -178,13 +178,13 @@ export default function CameraCheckPanel() {
           <div>
             <strong>{active.profile.username}</strong>
             <button type="button" onClick={cleanup}>
-              Fermer
+              إغلاق
             </button>
           </div>
           {active.snapshot_data ? (
-            <img src={active.snapshot_data} alt="Camera employe" />
+            <img src={active.snapshot_data} alt="كاميرا الموظف" />
           ) : (
-            <div className="camera-placeholder">En attente image...</div>
+            <div className="camera-placeholder">في انتظار الصورة...</div>
           )}
           <audio ref={audioRef} controls autoPlay playsInline onEnded={playNextAudio} />
           <p>{status}</p>
