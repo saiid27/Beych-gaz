@@ -30,14 +30,7 @@ export default function PermissionGate({ children }) {
     }
   }
 
-  if (allowed) {
-    return (
-      <>
-        {children}
-        <div className="media-ready-indicator">Caméra prête</div>
-      </>
-    )
-  }
+  if (allowed) return children
 
   return (
     <div className="permission-screen">

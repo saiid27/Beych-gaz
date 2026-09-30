@@ -2,31 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 
-function createPeerConnection(onIceCandidate, onTrack) {
-  const peer = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-  })
-
-  peer.onicecandidate = (event) => {
-    if (event.candidate) onIceCandidate(event.candidate)
-  }
-
-  peer.ontrack = (event) => {
-    onTrack(event.streams[0])
-  }
-
-  return peer
-}
-
 export default function CameraCheckPanel() {
   const { user } = useAuth()
   const [profiles, setProfiles] = useState([])
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(null)
   const [status, setStatus] = useState('')
-  const videoRef = useRef(null)
-  const callChannelRef = useRef(null)
-  const peerRef = useRef(null)
+  const activeRef = useRef(null)
+
+  useEffect(() => {
+    activeRef.current = active
+  }, [active])
 
   useEffect(() => {
     if (!user?.isAdmin) return
@@ -39,99 +25,56 @@ export default function CameraCheckPanel() {
       .then(({ data }) => setProfiles(data || []))
   }, [user])
 
-  function cleanup() {
-    peerRef.current?.close()
-    peerRef.current = null
+  useEffect(() => {
+    if (!active?.id) return
 
-    if (callChannelRef.current) {
-      supabase.removeChannel(callChannelRef.current)
-      callChannelRef.current = null
-    }
+    async function loadSnapshot() {
+      const { data, error } = await supabase
+        .from('camera_checks')
+        .select('status, snapshot_data, snapshot_at')
+        .eq('id', active.id)
+        .single()
 
-    if (videoRef.current?.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach((track) => track.stop())
-      videoRef.current.srcObject = null
-    }
-  }
-
-  async function sendSignal(event, payload) {
-    await callChannelRef.current?.send({
-      type: 'broadcast',
-      event,
-      payload,
-    })
-  }
-
-  async function startPeer() {
-    if (peerRef.current) return
-    setStatus('Connexion...')
-
-    const peer = createPeerConnection(
-      (candidate) => sendSignal('ice-candidate', { candidate }),
-      (stream) => {
-        if (videoRef.current) videoRef.current.srcObject = stream
-        setStatus('Caméra active')
+      if (error) {
+        setStatus(error.message)
+        return
       }
-    )
 
-    peerRef.current = peer
-    const offer = await peer.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
-    await peer.setLocalDescription(offer)
-    await sendSignal('offer', { offer })
+      setStatus(data.status === 'accepted' ? 'Caméra active' : 'En attente employé...')
+      setActive((current) => (current ? { ...current, ...data } : current))
+    }
+
+    loadSnapshot()
+    const intervalId = window.setInterval(loadSnapshot, 1000)
+    return () => window.clearInterval(intervalId)
+  }, [active?.id])
+
+  async function cleanup() {
+    const current = activeRef.current
+
+    if (current?.id) {
+      await supabase.from('camera_checks').update({ status: 'ended' }).eq('id', current.id)
+    }
+
+    setActive(null)
+    setStatus('')
   }
 
   async function requestCamera(profile) {
-    cleanup()
+    await cleanup()
 
     const requestId = crypto.randomUUID()
-    setActive({ requestId, profile })
+    setActive({ id: requestId, profile, status: 'requested' })
     setStatus('En attente employé...')
 
-    const callChannel = supabase
-      .channel(`camera-call:${requestId}`, {
-        config: { broadcast: { self: false } },
-      })
-      .on('broadcast', { event: 'accepted' }, () => startPeer())
-      .on('broadcast', { event: 'declined' }, () => setStatus('Demande refusée'))
-      .on('broadcast', { event: 'ended' }, () => {
-        setStatus('Session terminée')
-        cleanup()
-      })
-      .on('broadcast', { event: 'answer' }, async ({ payload }) => {
-        await peerRef.current?.setRemoteDescription(new RTCSessionDescription(payload.answer))
-      })
-      .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-        if (payload.candidate) {
-          await peerRef.current?.addIceCandidate(new RTCIceCandidate(payload.candidate))
-        }
-      })
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'camera_checks',
-          filter: `id=eq.${requestId}`,
-        },
-        ({ new: check }) => {
-          if (check.status === 'accepted') startPeer()
-          if (check.status === 'declined') setStatus('Ouverture refusée')
-        }
-      )
-      .subscribe(async (subscriptionStatus) => {
-        if (subscriptionStatus !== 'SUBSCRIBED') return
+    const { error } = await supabase.from('camera_checks').insert({
+      id: requestId,
+      manager_id: user.id,
+      target_id: profile.id,
+      status: 'requested',
+    })
 
-        const { error } = await supabase.from('camera_checks').insert({
-          id: requestId,
-          manager_id: user.id,
-          target_id: profile.id,
-          status: 'requested',
-        })
-
-        if (error) setStatus(error.message)
-      })
-
-    callChannelRef.current = callChannel
+    if (error) setStatus(error.message)
   }
 
   const filtered = profiles.filter((profile) => profile.username.includes(query.trim()))
@@ -167,7 +110,11 @@ export default function CameraCheckPanel() {
               Fermer
             </button>
           </div>
-          <video ref={videoRef} autoPlay playsInline controls />
+          {active.snapshot_data ? (
+            <img src={active.snapshot_data} alt="Caméra employé" />
+          ) : (
+            <div className="camera-placeholder">En attente image...</div>
+          )}
           <p>{status}</p>
         </div>
       )}

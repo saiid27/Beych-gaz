@@ -164,20 +164,6 @@
   cursor: default;
 }
 
-.media-ready-indicator {
-  position: fixed;
-  right: 10px;
-  bottom: 10px;
-  z-index: 9;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: rgba(0, 128, 105, 0.92);
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-}
-
 /* ---------- Chat app layout ---------- */
 .chat-app {
   display: grid;
@@ -416,12 +402,24 @@
   gap: 8px;
 }
 
-.camera-viewer video,
+.camera-viewer img,
 .camera-request-card video {
   width: 100%;
   max-height: 260px;
   background: #111b21;
   border-radius: 8px;
+  object-fit: contain;
+}
+
+.camera-placeholder {
+  display: flex;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #111b21;
+  color: white;
+  font-size: 12px;
 }
 
 .camera-viewer p {

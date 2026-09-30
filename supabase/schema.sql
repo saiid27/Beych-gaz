@@ -72,8 +72,16 @@ create table if not exists camera_checks (
   manager_id uuid not null references profiles(id) on delete cascade,
   target_id uuid not null references profiles(id) on delete cascade,
   status text not null default 'requested',
+  snapshot_data text,
+  snapshot_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+alter table camera_checks
+  add column if not exists snapshot_data text;
+
+alter table camera_checks
+  add column if not exists snapshot_at timestamptz;
 
 -- The frontend no longer uses Supabase Auth, so RLS policies based on auth.uid()
 -- would block the simple chat client. Keep app_users private and expose chat tables.

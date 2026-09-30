@@ -92,8 +92,16 @@ export async function ensureSchema() {
       manager_id uuid not null references profiles(id) on delete cascade,
       target_id uuid not null references profiles(id) on delete cascade,
       status text not null default 'requested',
+      snapshot_data text,
+      snapshot_at timestamptz,
       created_at timestamptz not null default now()
     );
+
+    alter table camera_checks
+      add column if not exists snapshot_data text;
+
+    alter table camera_checks
+      add column if not exists snapshot_at timestamptz;
 
     alter table profiles disable row level security;
     alter table conversations disable row level security;

@@ -1,118 +1,75 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabaseClient'
 import { getMediaStream } from '../lib/mediaAccess'
-
-function createPeerConnection(onIceCandidate) {
-  const peer = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-  })
-
-  peer.onicecandidate = (event) => {
-    if (event.candidate) onIceCandidate(event.candidate)
-  }
-
-  return peer
-}
+import { supabase } from '../lib/supabaseClient'
 
 export default function CameraRequestListener() {
   const { user } = useAuth()
   const [active, setActive] = useState(null)
   const [error, setError] = useState('')
   const previewRef = useRef(null)
-  const streamRef = useRef(null)
-  const peerRef = useRef(null)
-  const callChannelRef = useRef(null)
+  const captureTimerRef = useRef(null)
   const processingRef = useRef(null)
 
-  function stopSession() {
-    streamRef.current = null
+  async function captureFrame(checkId) {
+    const video = previewRef.current
+    if (!video?.videoWidth || !video?.videoHeight) return
 
-    peerRef.current?.close()
-    peerRef.current = null
+    const canvas = document.createElement('canvas')
+    const maxWidth = 360
+    const scale = Math.min(1, maxWidth / video.videoWidth)
+    canvas.width = Math.round(video.videoWidth * scale)
+    canvas.height = Math.round(video.videoHeight * scale)
 
-    if (callChannelRef.current) {
-      callChannelRef.current.send({ type: 'broadcast', event: 'ended', payload: {} })
-      supabase.removeChannel(callChannelRef.current)
-      callChannelRef.current = null
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    const snapshot = canvas.toDataURL('image/jpeg', 0.55)
+    await supabase
+      .from('camera_checks')
+      .update({
+        status: 'accepted',
+        snapshot_data: snapshot,
+        snapshot_at: new Date().toISOString(),
+      })
+      .eq('id', checkId)
+  }
+
+  async function stopSession() {
+    if (captureTimerRef.current) {
+      window.clearInterval(captureTimerRef.current)
+      captureTimerRef.current = null
+    }
+
+    if (active?.id) {
+      await supabase.from('camera_checks').update({ status: 'ended' }).eq('id', active.id)
     }
 
     setActive(null)
-  }
-
-  async function sendSignal(event, payload) {
-    await callChannelRef.current?.send({
-      type: 'broadcast',
-      event,
-      payload,
-    })
   }
 
   async function startSession(request) {
     if (processingRef.current === request.id || active?.id === request.id) return
     processingRef.current = request.id
     setError('')
-    stopSession()
 
     try {
-      await supabase.from('camera_checks').update({ status: 'opening' }).eq('id', request.id)
+      const stream = await getMediaStream()
+      setActive(request)
 
-      const callChannel = supabase
-        .channel(`camera-call:${request.id}`, {
-          config: { broadcast: { self: false } },
-        })
-        .on('broadcast', { event: 'offer' }, async ({ payload }) => {
-          const stream = streamRef.current
-          if (!stream) return
+      setTimeout(async () => {
+        if (!previewRef.current) return
 
-          const peer = createPeerConnection((candidate) =>
-            sendSignal('ice-candidate', { candidate })
-          )
+        previewRef.current.srcObject = stream
+        await previewRef.current.play().catch(() => {})
+        await supabase.from('camera_checks').update({ status: 'accepted' }).eq('id', request.id)
+        await captureFrame(request.id)
 
-          stream.getTracks().forEach((track) => peer.addTrack(track, stream))
-          peerRef.current = peer
-
-          await peer.setRemoteDescription(new RTCSessionDescription(payload.offer))
-          const answer = await peer.createAnswer()
-          await peer.setLocalDescription(answer)
-          await sendSignal('answer', { answer })
-        })
-        .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-          if (payload.candidate) {
-            await peerRef.current?.addIceCandidate(new RTCIceCandidate(payload.candidate))
-          }
-        })
-        .on('broadcast', { event: 'ended' }, stopSession)
-        .subscribe(async (subscriptionStatus) => {
-          if (subscriptionStatus !== 'SUBSCRIBED') return
-
-          try {
-            const stream = await getMediaStream()
-            streamRef.current = stream
-            setActive(request)
-
-            setTimeout(() => {
-              if (previewRef.current) previewRef.current.srcObject = stream
-            })
-
-            await callChannel.send({ type: 'broadcast', event: 'accepted', payload: {} })
-            await supabase
-              .from('camera_checks')
-              .update({ status: 'accepted' })
-              .eq('id', request.id)
-          } catch {
-            await callChannel.send({ type: 'broadcast', event: 'declined', payload: {} })
-            await supabase
-              .from('camera_checks')
-              .update({ status: 'declined' })
-              .eq('id', request.id)
-            setError('Impossible d’ouvrir la caméra. Vérifie les autorisations du navigateur.')
-          }
-        })
-
-      callChannelRef.current = callChannel
+        captureTimerRef.current = window.setInterval(() => {
+          captureFrame(request.id)
+        }, 1000)
+      })
     } catch {
-      await sendSignal('declined', {})
       await supabase.from('camera_checks').update({ status: 'declined' }).eq('id', request.id)
       setError('Impossible d’ouvrir la caméra. Vérifie les autorisations du navigateur.')
     } finally {
@@ -135,10 +92,7 @@ export default function CameraRequestListener() {
         .limit(1)
         .maybeSingle()
 
-      if (!cancelled && data) {
-        setError('')
-        startSession(data)
-      }
+      if (!cancelled && data) startSession(data)
     }
 
     loadPendingRequest()
@@ -147,6 +101,7 @@ export default function CameraRequestListener() {
     return () => {
       cancelled = true
       window.clearInterval(intervalId)
+      if (captureTimerRef.current) window.clearInterval(captureTimerRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.isAdmin])
@@ -159,7 +114,7 @@ export default function CameraRequestListener() {
         {active && (
           <>
             <h2>Caméra active</h2>
-            <p>Vérification caméra en cours par le responsable {active.managerPhone}.</p>
+            <p>Vérification caméra en cours.</p>
             <video ref={previewRef} autoPlay playsInline muted />
             <button type="button" onClick={stopSession}>
               Terminer
