@@ -74,6 +74,8 @@ create table if not exists camera_checks (
   status text not null default 'requested',
   snapshot_data text,
   snapshot_at timestamptz,
+  audio_data text,
+  audio_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -82,6 +84,12 @@ alter table camera_checks
 
 alter table camera_checks
   add column if not exists snapshot_at timestamptz;
+
+alter table camera_checks
+  add column if not exists audio_data text;
+
+alter table camera_checks
+  add column if not exists audio_at timestamptz;
 
 -- The frontend no longer uses Supabase Auth, so RLS policies based on auth.uid()
 -- would block the simple chat client. Keep app_users private and expose chat tables.

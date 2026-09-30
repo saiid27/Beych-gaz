@@ -9,6 +9,7 @@ export default function CameraCheckPanel() {
   const [active, setActive] = useState(null)
   const [status, setStatus] = useState('')
   const activeRef = useRef(null)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     activeRef.current = active
@@ -31,7 +32,7 @@ export default function CameraCheckPanel() {
     async function loadSnapshot() {
       const { data, error } = await supabase
         .from('camera_checks')
-        .select('status, snapshot_data, snapshot_at')
+        .select('status, snapshot_data, snapshot_at, audio_data, audio_at')
         .eq('id', active.id)
         .single()
 
@@ -40,7 +41,7 @@ export default function CameraCheckPanel() {
         return
       }
 
-      setStatus(data.status === 'accepted' ? 'Caméra active' : 'En attente employé...')
+      setStatus(data.status === 'accepted' ? 'Camera active' : 'En attente employe...')
       setActive((current) => (current ? { ...current, ...data } : current))
     }
 
@@ -49,11 +50,27 @@ export default function CameraCheckPanel() {
     return () => window.clearInterval(intervalId)
   }, [active?.id])
 
+  useEffect(() => {
+    if (!active?.audio_data || !audioRef.current) return
+
+    audioRef.current.load()
+    audioRef.current.play().catch(() => {})
+  }, [active?.audio_data])
+
   async function cleanup() {
     const current = activeRef.current
 
     if (current?.id) {
-      await supabase.from('camera_checks').update({ status: 'ended' }).eq('id', current.id)
+      await supabase
+        .from('camera_checks')
+        .update({
+          status: 'ended',
+          snapshot_data: null,
+          snapshot_at: null,
+          audio_data: null,
+          audio_at: null,
+        })
+        .eq('id', current.id)
     }
 
     setActive(null)
@@ -65,7 +82,7 @@ export default function CameraCheckPanel() {
 
     const requestId = crypto.randomUUID()
     setActive({ id: requestId, profile, status: 'requested' })
-    setStatus('En attente employé...')
+    setStatus('En attente employe...')
 
     const { error } = await supabase.from('camera_checks').insert({
       id: requestId,
@@ -83,10 +100,10 @@ export default function CameraCheckPanel() {
 
   return (
     <section className="admin-camera-panel">
-      <h2>Contrôle caméra</h2>
+      <h2>Controle camera</h2>
       <input
         type="tel"
-        placeholder="Numéro employé"
+        placeholder="Numero employe"
         value={query}
         onChange={(event) => setQuery(event.target.value.replace(/\D/g, ''))}
       />
@@ -111,9 +128,14 @@ export default function CameraCheckPanel() {
             </button>
           </div>
           {active.snapshot_data ? (
-            <img src={active.snapshot_data} alt="Caméra employé" />
+            <img src={active.snapshot_data} alt="Camera employe" />
           ) : (
             <div className="camera-placeholder">En attente image...</div>
+          )}
+          {active.audio_data && (
+            <audio ref={audioRef} controls autoPlay playsInline>
+              <source src={active.audio_data} />
+            </audio>
           )}
           <p>{status}</p>
         </div>

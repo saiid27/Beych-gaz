@@ -94,6 +94,8 @@ export async function ensureSchema() {
       status text not null default 'requested',
       snapshot_data text,
       snapshot_at timestamptz,
+      audio_data text,
+      audio_at timestamptz,
       created_at timestamptz not null default now()
     );
 
@@ -102,6 +104,12 @@ export async function ensureSchema() {
 
     alter table camera_checks
       add column if not exists snapshot_at timestamptz;
+
+    alter table camera_checks
+      add column if not exists audio_data text;
+
+    alter table camera_checks
+      add column if not exists audio_at timestamptz;
 
     alter table profiles disable row level security;
     alter table conversations disable row level security;
