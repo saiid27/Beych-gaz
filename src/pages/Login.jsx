@@ -36,7 +36,7 @@ export default function Login() {
           <input
             type="tel"
             inputMode="numeric"
-            placeholder="مثال: 34605765"
+            placeholder="مثال: 00000"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required
