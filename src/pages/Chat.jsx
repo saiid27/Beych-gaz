@@ -12,6 +12,10 @@ export default function Chat() {
   const [conversations, setConversations] = useState([])
   const [activeId, setActiveId] = useState(null)
 
+  useEffect(() => {
+    fetch('/api/cleanup-images', { method: 'POST' }).catch(() => {})
+  }, [])
+
   async function reload(selectId) {
     const data = user.isAdmin ? await fetchAllConversations() : await fetchMyConversations(user.id)
     setConversations(data)

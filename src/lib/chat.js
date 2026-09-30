@@ -127,6 +127,8 @@ async function compressImage(file) {
 }
 
 export async function uploadChatImage(file, userId) {
+  fetch('/api/cleanup-images', { method: 'POST' }).catch(() => {})
+
   const compressedFile = await compressImage(file)
   const ext = compressedFile.name.split('.').pop()
   const path = `${userId}/${Date.now()}.${ext}`

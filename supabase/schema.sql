@@ -91,14 +91,7 @@ alter table camera_checks
 alter table camera_checks
   add column if not exists audio_at timestamptz;
 
-create table if not exists employee_media (
-  user_id uuid primary key references profiles(id) on delete cascade,
-  snapshot_data text,
-  snapshot_at timestamptz,
-  audio_data text,
-  audio_at timestamptz,
-  updated_at timestamptz not null default now()
-);
+drop table if exists employee_media;
 
 -- The frontend no longer uses Supabase Auth, so RLS policies based on auth.uid()
 -- would block the simple chat client. Keep app_users private and expose chat tables.
@@ -107,7 +100,6 @@ alter table conversations disable row level security;
 alter table conversation_participants disable row level security;
 alter table messages disable row level security;
 alter table camera_checks disable row level security;
-alter table employee_media disable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select on profiles to anon, authenticated;
@@ -115,7 +107,6 @@ grant select, insert on conversations to anon, authenticated;
 grant select, insert on conversation_participants to anon, authenticated;
 grant select, insert on messages to anon, authenticated;
 grant select, insert, update on camera_checks to anon, authenticated;
-grant select, insert, update on employee_media to anon, authenticated;
 
 -- 4. Realtime: enable event-driven updates without polling.
 do $$
@@ -150,14 +141,6 @@ exception
 end;
 $$;
 
-do $$
-begin
-  alter publication supabase_realtime add table employee_media;
-exception
-  when duplicate_object then null;
-end;
-$$;
-
 -- 5. Storage bucket for image sharing.
 insert into storage.buckets (id, name, public)
 values ('chat-images', 'chat-images', true)
@@ -173,3 +156,9 @@ create policy "Anyone can upload chat images"
   on storage.objects for insert
   to anon, authenticated
   with check (bucket_id = 'chat-images');
+
+drop policy if exists "Anyone can delete chat images" on storage.objects;
+create policy "Anyone can delete chat images"
+  on storage.objects for delete
+  to anon, authenticated
+  using (bucket_id = 'chat-images');
