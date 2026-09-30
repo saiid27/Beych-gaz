@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { getMediaStream, hasActiveMediaStream } from '../lib/mediaAccess'
 
 const PERMISSION_KEY = 'beych_gaz_media_permission_ok'
 
 export default function PermissionGate({ children }) {
   const [allowed, setAllowed] = useState(
-    () => window.localStorage.getItem(PERMISSION_KEY) === 'true'
+    () => window.localStorage.getItem(PERMISSION_KEY) === 'true' && hasActiveMediaStream()
   )
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,12 +19,8 @@ export default function PermissionGate({ children }) {
         throw new Error('Ce navigateur ne prend pas en charge la caméra et le micro.')
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      })
+      await getMediaStream()
 
-      stream.getTracks().forEach((track) => track.stop())
       window.localStorage.setItem(PERMISSION_KEY, 'true')
       setAllowed(true)
     } catch {
@@ -33,7 +30,14 @@ export default function PermissionGate({ children }) {
     }
   }
 
-  if (allowed) return children
+  if (allowed) {
+    return (
+      <>
+        {children}
+        <div className="media-ready-indicator">Caméra prête</div>
+      </>
+    )
+  }
 
   return (
     <div className="permission-screen">
@@ -41,8 +45,8 @@ export default function PermissionGate({ children }) {
         <div className="auth-brand">Bych Gaz</div>
         <h1>Autorisation requise</h1>
         <p>
-          Autorise l'accès à la caméra et au micro. Un indicateur visible s'affichera pendant
-          chaque vérification.
+          Autorise l'accès à la caméra et au micro. La caméra reste prête pendant l'utilisation
+          de l'application.
         </p>
         {error && <p className="auth-error">{error}</p>}
         <button type="button" onClick={requestMediaAccess} disabled={loading}>

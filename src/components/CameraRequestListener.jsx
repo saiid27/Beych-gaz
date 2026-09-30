@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { getMediaStream } from '../lib/mediaAccess'
 
 function createPeerConnection(onIceCandidate) {
   const peer = new RTCPeerConnection({
@@ -24,7 +25,6 @@ export default function CameraRequestListener() {
   const callChannelRef = useRef(null)
 
   function stopSession() {
-    streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
 
     peerRef.current?.close()
@@ -82,7 +82,7 @@ export default function CameraRequestListener() {
           if (subscriptionStatus !== 'SUBSCRIBED') return
 
           try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            const stream = await getMediaStream()
             streamRef.current = stream
             setActive(request)
 

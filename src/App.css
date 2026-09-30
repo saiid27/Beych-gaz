@@ -164,6 +164,20 @@
   cursor: default;
 }
 
+.media-ready-indicator {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  z-index: 9;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(0, 128, 105, 0.92);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
 /* ---------- Chat app layout ---------- */
 .chat-app {
   display: grid;
