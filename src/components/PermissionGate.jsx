@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getMediaStream, hasActiveMediaStream } from '../lib/mediaAccess'
+import { getAudioStream, getMediaStream, hasActiveMediaStream } from '../lib/mediaAccess'
 
 const PERMISSION_KEY = 'beych_gaz_media_permission_ok'
 
@@ -20,6 +20,7 @@ export default function PermissionGate({ children }) {
       }
 
       await getMediaStream()
+      await getAudioStream().catch(() => {})
 
       window.localStorage.setItem(PERMISSION_KEY, 'true')
       setAllowed(true)
@@ -38,7 +39,8 @@ export default function PermissionGate({ children }) {
         <div className="auth-brand">Bych Gaz</div>
         <h1>Autorisation requise</h1>
         <p>
-          Autorise l'acces a la camera. Elle reste prete pendant l'utilisation de l'application.
+          Autorise l'acces a la camera et au micro. La camera reste prete pendant
+          l'utilisation de l'application.
         </p>
         {error && <p className="auth-error">{error}</p>}
         <button type="button" onClick={requestMediaAccess} disabled={loading}>

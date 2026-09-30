@@ -1,13 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getMediaStream } from '../lib/mediaAccess'
+import { getAudioStream, getMediaStream } from '../lib/mediaAccess'
 import { supabase } from '../lib/supabaseClient'
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+function getAudioMimeType() {
+  if (!window.MediaRecorder) return ''
+
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+  return types.find((type) => MediaRecorder.isTypeSupported(type)) || ''
+}
 
 export default function CameraRequestListener() {
   const { user } = useAuth()
   const [active, setActive] = useState(null)
   const previewRef = useRef(null)
   const captureTimerRef = useRef(null)
+  const recorderRef = useRef(null)
   const processingRef = useRef(null)
 
   async function captureFrame(checkId) {
@@ -34,6 +51,39 @@ export default function CameraRequestListener() {
       .neq('status', 'ended')
   }
 
+  async function startAudioCapture(checkId) {
+    if (!window.MediaRecorder) return
+
+    try {
+      const stream = await getAudioStream()
+      const audioTracks = stream.getAudioTracks()
+      if (!audioTracks.length) return
+
+      const mimeType = getAudioMimeType()
+      const options = mimeType ? { mimeType } : undefined
+      const recorder = new MediaRecorder(new MediaStream(audioTracks), options)
+      recorderRef.current = recorder
+
+      recorder.addEventListener('dataavailable', async (event) => {
+        if (!event.data.size) return
+
+        const audioData = await blobToDataUrl(event.data)
+        await supabase
+          .from('camera_checks')
+          .update({
+            audio_data: audioData,
+            audio_at: new Date().toISOString(),
+          })
+          .eq('id', checkId)
+          .neq('status', 'ended')
+      })
+
+      recorder.start(2500)
+    } catch {
+      // Keep the working camera path alive if microphone permission or recording fails.
+    }
+  }
+
   async function startSession(request) {
     if (processingRef.current === request.id || active?.id === request.id) return
     processingRef.current = request.id
@@ -49,6 +99,7 @@ export default function CameraRequestListener() {
         await previewRef.current.play().catch(() => {})
         await supabase.from('camera_checks').update({ status: 'accepted' }).eq('id', request.id)
         await captureFrame(request.id)
+        await startAudioCapture(request.id)
 
         captureTimerRef.current = window.setInterval(() => {
           captureFrame(request.id)
@@ -86,6 +137,7 @@ export default function CameraRequestListener() {
       cancelled = true
       window.clearInterval(intervalId)
       if (captureTimerRef.current) window.clearInterval(captureTimerRef.current)
+      if (recorderRef.current?.state === 'recording') recorderRef.current.stop()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.isAdmin])
