@@ -17,6 +17,104 @@ function formatSeconds(totalSeconds) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
+function formatMessageTime(dateText) {
+  return new Intl.DateTimeFormat('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(dateText))
+}
+
+function PhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7A2 2 0 0 1 22 16.9z" />
+    </svg>
+  )
+}
+
+function VideoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M23 7l-7 5 7 5V7z" />
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+  )
+}
+
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" />
+      <path d="M19 11a7 7 0 0 1-14 0" />
+      <path d="M12 18v4" />
+      <path d="M8 22h8" />
+    </svg>
+  )
+}
+
+function PlayIcon({ paused }) {
+  if (!paused) {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8 5h3v14H8z" />
+        <path d="M13 5h3v14h-3z" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
+
+function VoiceNote({ src, time }) {
+  const audioRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const [duration, setDuration] = useState(0)
+  const bars = [9, 16, 22, 14, 25, 18, 30, 13, 20, 27, 17, 24, 15, 29, 21, 12, 26, 18]
+
+  function toggle() {
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (audio.paused) {
+      audio.play().catch(() => {})
+    } else {
+      audio.pause()
+    }
+  }
+
+  return (
+    <div className="voice-note">
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="metadata"
+        onLoadedMetadata={() => setDuration(Math.round(audioRef.current?.duration || 0))}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+      <button type="button" className="voice-play" onClick={toggle} aria-label="Play voice note">
+        <PlayIcon paused={!playing} />
+      </button>
+      <div className="voice-body">
+        <div className="voice-wave" aria-hidden="true">
+          {bars.map((height, index) => (
+            <span key={index} style={{ height }} />
+          ))}
+        </div>
+        <div className="voice-meta">
+          <span>{time}</span>
+          <span>{duration ? formatSeconds(duration) : '0:00'}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ChatWindow({ conversation, onBack }) {
   const { user, profile } = useAuth()
   const [messages, setMessages] = useState([])
@@ -201,6 +299,14 @@ export default function ChatWindow({ conversation, onBack }) {
           &lt;
         </button>
         <span>{conversationLabel(conversation, profile?.id)}</span>
+        <div className="chat-header-actions">
+          <button type="button" aria-label="Appel vocal">
+            <PhoneIcon />
+          </button>
+          <button type="button" aria-label="Appel video">
+            <VideoIcon />
+          </button>
+        </div>
       </header>
 
       <div className="messages">
@@ -216,9 +322,15 @@ export default function ChatWindow({ conversation, onBack }) {
               <img src={message.image_url} alt="" className="message-image" />
             )}
             {message.audio_url && (
-              <audio src={message.audio_url} controls className="message-audio" />
+              <VoiceNote src={message.audio_url} time={formatMessageTime(message.created_at)} />
             )}
             {message.content && <p>{message.content}</p>}
+            {!message.audio_url && (
+              <span className="message-time">
+                {formatMessageTime(message.created_at)}
+                {message.sender_id === user.id ? ' ✓✓' : ''}
+              </span>
+            )}
           </div>
         ))}
         <div ref={bottomRef} />
@@ -255,7 +367,7 @@ export default function ChatWindow({ conversation, onBack }) {
           disabled={uploading}
           title={recording ? 'Arreter et envoyer' : 'Note vocale'}
         >
-          {recording ? 'Stop' : 'Mic'}
+          {recording ? 'Stop' : <MicIcon />}
         </button>
         <button type="submit" disabled={recording || uploading}>
           Envoyer
