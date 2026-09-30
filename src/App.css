@@ -477,11 +477,11 @@
 
 .camera-hidden-capture {
   position: fixed;
-  left: -2px;
-  bottom: -2px;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
+  left: -240px;
+  bottom: 0;
+  width: 160px;
+  height: 120px;
+  opacity: 0.01;
   pointer-events: none;
 }
 

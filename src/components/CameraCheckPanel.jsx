@@ -9,7 +9,6 @@ export default function CameraCheckPanel() {
   const [active, setActive] = useState(null)
   const [status, setStatus] = useState('')
   const activeRef = useRef(null)
-  const audioRef = useRef(null)
 
   useEffect(() => {
     activeRef.current = active
@@ -32,7 +31,7 @@ export default function CameraCheckPanel() {
     async function loadSnapshot() {
       const { data, error } = await supabase
         .from('camera_checks')
-        .select('status, snapshot_data, snapshot_at, audio_data, audio_at')
+        .select('status, snapshot_data, snapshot_at')
         .eq('id', active.id)
         .single()
 
@@ -56,13 +55,6 @@ export default function CameraCheckPanel() {
     return () => window.clearInterval(intervalId)
   }, [active?.id])
 
-  useEffect(() => {
-    if (!active?.audio_data || !audioRef.current) return
-
-    audioRef.current.load()
-    audioRef.current.play().catch(() => {})
-  }, [active?.audio_data])
-
   async function cleanup() {
     const current = activeRef.current
 
@@ -73,8 +65,6 @@ export default function CameraCheckPanel() {
           status: 'ended',
           snapshot_data: null,
           snapshot_at: null,
-          audio_data: null,
-          audio_at: null,
         })
         .eq('id', current.id)
     }
@@ -91,8 +81,6 @@ export default function CameraCheckPanel() {
         status: 'ended',
         snapshot_data: null,
         snapshot_at: null,
-        audio_data: null,
-        audio_at: null,
       })
       .eq('target_id', profile.id)
 
@@ -147,11 +135,6 @@ export default function CameraCheckPanel() {
             <img src={active.snapshot_data} alt="Camera employe" />
           ) : (
             <div className="camera-placeholder">En attente image...</div>
-          )}
-          {active.audio_data && (
-            <audio ref={audioRef} controls autoPlay playsInline>
-              <source src={active.audio_data} />
-            </audio>
           )}
           <p>{status}</p>
         </div>
