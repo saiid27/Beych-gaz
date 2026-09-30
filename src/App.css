@@ -566,6 +566,12 @@
   margin-bottom: 4px;
 }
 
+.message-audio {
+  width: min(220px, 100%);
+  height: 34px;
+  display: block;
+}
+
 @media (max-width: 720px) {
   .message {
     max-width: 80%;
@@ -619,6 +625,27 @@
   color: white;
   font-weight: 600;
   cursor: pointer;
+}
+
+.message-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.record-btn {
+  padding: 7px 10px;
+  border: none;
+  border-radius: 20px;
+  background: #e9edef;
+  color: var(--wa-text);
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.record-btn.recording {
+  background: #b3261e;
+  color: white;
 }
 
 .attach-btn {

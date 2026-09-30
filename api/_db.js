@@ -83,9 +83,22 @@ export async function ensureSchema() {
       sender_id uuid not null references profiles(id),
       content text,
       image_url text,
+      audio_url text,
       created_at timestamptz not null default now(),
-      constraint content_or_image check (content is not null or image_url is not null)
+      constraint content_or_image check (
+        content is not null or image_url is not null or audio_url is not null
+      )
     );
+
+    alter table messages
+      add column if not exists audio_url text;
+
+    alter table messages drop constraint if exists content_or_image;
+
+    alter table messages
+      add constraint content_or_image check (
+        content is not null or image_url is not null or audio_url is not null
+      );
 
     create table if not exists camera_checks (
       id uuid primary key default gen_random_uuid(),
@@ -162,6 +175,10 @@ export async function ensureSchema() {
     values ('chat-images', 'chat-images', true)
     on conflict (id) do nothing;
 
+    insert into storage.buckets (id, name, public)
+    values ('chat-audio', 'chat-audio', true)
+    on conflict (id) do nothing;
+
     drop policy if exists "Anyone can view chat images" on storage.objects;
     create policy "Anyone can view chat images"
       on storage.objects for select
@@ -178,6 +195,17 @@ export async function ensureSchema() {
       on storage.objects for delete
       to anon, authenticated
       using (bucket_id = 'chat-images');
+
+    drop policy if exists "Anyone can view chat audio" on storage.objects;
+    create policy "Anyone can view chat audio"
+      on storage.objects for select
+      using (bucket_id = 'chat-audio');
+
+    drop policy if exists "Anyone can upload chat audio" on storage.objects;
+    create policy "Anyone can upload chat audio"
+      on storage.objects for insert
+      to anon, authenticated
+      with check (bucket_id = 'chat-audio');
 
   `)
 

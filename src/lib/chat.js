@@ -84,12 +84,13 @@ export async function fetchMessages(conversationId) {
   return data
 }
 
-export async function sendMessage({ conversationId, senderId, content, imageUrl }) {
+export async function sendMessage({ conversationId, senderId, content, imageUrl, audioUrl }) {
   const { error } = await supabase.from('messages').insert({
     conversation_id: conversationId,
     sender_id: senderId,
     content: content || null,
     image_url: imageUrl || null,
+    audio_url: audioUrl || null,
   })
   if (error) throw error
 }
@@ -135,6 +136,16 @@ export async function uploadChatImage(file, userId) {
   const { error } = await supabase.storage.from('chat-images').upload(path, compressedFile)
   if (error) throw error
   const { data } = supabase.storage.from('chat-images').getPublicUrl(path)
+  return data.publicUrl
+}
+
+export async function uploadChatAudio(blob, userId) {
+  const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
+  const path = `${userId}/${Date.now()}.${ext}`
+  const file = new File([blob], path.split('/').pop(), { type: blob.type || 'audio/webm' })
+  const { error } = await supabase.storage.from('chat-audio').upload(path, file)
+  if (error) throw error
+  const { data } = supabase.storage.from('chat-audio').getPublicUrl(path)
   return data.publicUrl
 }
 
