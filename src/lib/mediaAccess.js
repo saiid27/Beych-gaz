@@ -5,7 +5,7 @@ export async function getMediaStream() {
 
   mediaStream = await navigator.mediaDevices.getUserMedia({
     video: true,
-    audio: true,
+    audio: false,
   })
 
   return mediaStream
